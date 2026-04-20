@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Truck, User, Calendar, CreditCard, Loader2, AlertCircle, ExternalLink, ChevronDown, Search } from 'lucide-react';
 import api from '../services/api';
+import OrderDetailModal from '../components/OrderDetailModal';
 
 const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
@@ -9,6 +10,7 @@ const OrdersPage = () => {
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
 
     const fetchData = async (search = '', status = '') => {
         try {
@@ -149,7 +151,11 @@ const OrdersPage = () => {
                             ) : orders.map((order) => (
                                 <tr key={order.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
                                     <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
+                                        <div 
+                                            onClick={() => setSelectedOrderId(order.id)}
+                                            style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', cursor: 'pointer' }}
+                                            className="hover-text-red"
+                                        >
                                             <Package size={16} color="var(--red-main)" />
                                             #ORD-{order.id}
                                         </div>
@@ -231,6 +237,14 @@ const OrdersPage = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Order Detail Modal */}
+            {selectedOrderId && (
+                <OrderDetailModal 
+                    orderId={selectedOrderId} 
+                    onClose={() => setSelectedOrderId(null)} 
+                />
+            )}
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Mail, Phone, Calendar, Loader2, X, Check, Trash2, Package, Search } from 'lucide-react';
 import api from '../services/api';
+import OrderDetailModal from '../components/OrderDetailModal';
 
 const CustomersPage = () => {
     const [customers, setCustomers] = useState([]);
@@ -14,6 +15,7 @@ const CustomersPage = () => {
     const [customerReviews, setCustomerReviews] = useState([]);
     const [customerAddresses, setCustomerAddresses] = useState([]);
     const [detailsLoading, setDetailsLoading] = useState(false);
+    const [selectedOrderId, setSelectedOrderId] = useState(null);
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -247,9 +249,14 @@ const CustomersPage = () => {
                                         {customerOrders.length > 0 ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                 {customerOrders.map(order => (
-                                                    <div key={order.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                                                    <div 
+                                                        key={order.id} 
+                                                        onClick={(e) => { e.stopPropagation(); setSelectedOrderId(order.id); }}
+                                                        style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--glass-border)', cursor: 'pointer' }}
+                                                        className="hover-nav"
+                                                    >
                                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                            <strong>Order #{order.id}</strong>
+                                                            <strong className="hover-text-red">Order #{order.id}</strong>
                                                             <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)' }}>{order.status}</span>
                                                         </div>
                                                         <div style={{ fontSize: '0.9rem', color: 'var(--text-dim)' }}>
@@ -300,6 +307,14 @@ const CustomersPage = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Order Detail Modal */}
+            {selectedOrderId && (
+                <OrderDetailModal 
+                    orderId={selectedOrderId} 
+                    onClose={() => setSelectedOrderId(null)} 
+                />
             )}
 
             <style>

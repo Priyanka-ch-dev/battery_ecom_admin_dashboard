@@ -7,21 +7,21 @@ import {
 import { TrendingUp, IndianRupee, ShoppingCart, Search, Users, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
 import api from '../services/api';
 
-const StatCard = ({ label, value, icon: Icon, trend, trendValue, bgColor, iconColor, loading }) => (
+const StatCard = ({ label, value, icon: Icon, trend, trendValue, bgColor, borderColor, iconColor, loading }) => (
   <div className={`stat-card glass`} style={{
     position: 'relative',
     overflow: 'hidden',
     borderRadius: '16px',
     padding: '1.75rem',
     background: bgColor || '#fff',
-    border: '1px solid var(--glass-border)',
+    border: `1px solid ${borderColor || 'var(--glass-border)'}`,
     color: 'var(--text-main)',
     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
   }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', position: 'relative', zIndex: 1 }}>
       <span style={{ fontSize: '1rem', fontWeight: 800, color: '#000' }}>{label}</span>
-      <div style={{ background: '#fff', padding: '8px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Icon size={20} color={iconColor || 'var(--red-main)'} />
+      <div style={{ background: '#fff', padding: '10px', borderRadius: '12px', border: `1px solid ${borderColor || 'var(--glass-border)'}`, boxShadow: '0 4px 6px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={22} color={iconColor || 'var(--red-main)'} />
       </div>
     </div>
 
@@ -146,8 +146,9 @@ const DashboardPage = () => {
           trendValue="+14%"
           trend="from last month"
           icon={IndianRupee}
-          bgColor="rgba(211, 47, 47, 0.04)"
-          iconColor="#d32f2f"
+          bgColor="rgba(211, 47, 47, 0.15)"
+          borderColor="rgba(211, 47, 47, 0.4)"
+          iconColor="#b71c1c"
           loading={loading}
         />
         <StatCard
@@ -156,8 +157,9 @@ const DashboardPage = () => {
           trendValue="+2.1%"
           trend="vs last week"
           icon={TrendingUp}
-          bgColor="rgba(25, 118, 210, 0.04)"
-          iconColor="#1976d2"
+          bgColor="rgba(25, 118, 210, 0.15)"
+          borderColor="rgba(25, 118, 210, 0.4)"
+          iconColor="#0d47a1"
           loading={loading}
         />
         <StatCard
@@ -166,8 +168,9 @@ const DashboardPage = () => {
           trendValue="+5.4%"
           trend="new today"
           icon={ShoppingCart}
-          bgColor="rgba(56, 142, 60, 0.04)"
-          iconColor="#388e3c"
+          bgColor="rgba(56, 142, 60, 0.15)"
+          borderColor="rgba(56, 142, 60, 0.4)"
+          iconColor="#1b5e20"
           loading={loading}
         />
       </div>
@@ -296,7 +299,7 @@ const DashboardPage = () => {
 
         {/* Most Viewed Products */}
         <div className="glass" style={{ padding: '2rem', borderRadius: '16px', background: '#fff', border: '1px solid var(--glass-border)' }}>
-          <h3 style={{ marginBottom: '2.5rem', fontSize: '1.1rem', fontWeight: 800, color: '#000' }}>Engagement Leaders</h3>
+          <h3 style={{ marginBottom: '2.5rem', fontSize: '1.1rem', fontWeight: 800, color: '#000' }}>Most Viewed Product</h3>
           <div style={{ width: '100%', height: 280 }}>
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><Loader2 className="animate-spin" color="#0288d1" /></div>
