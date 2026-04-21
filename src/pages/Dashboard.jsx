@@ -4,7 +4,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area
 } from 'recharts';
-import { TrendingUp, IndianRupee, ShoppingCart, Search, Users, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
+import { 
+  TrendingUp, IndianRupee, ShoppingCart, Search, Users, 
+  AlertCircle, Loader2, ChevronRight, Store 
+} from 'lucide-react';
 import api from '../services/api';
 
 const StatCard = ({ label, value, icon: Icon, trend, trendValue, bgColor, borderColor, iconColor, loading }) => (
@@ -143,8 +146,8 @@ const DashboardPage = () => {
         <StatCard
           label="Lifetime Sales"
           value={`₹${data?.metrics?.lifetime_sales?.toLocaleString() || '0.00'}`}
-          trendValue="+14%"
-          trend="from last month"
+          trendValue={`₹${data?.metrics?.sales_today?.toLocaleString() || '0'}`}
+          trend="earned today"
           icon={IndianRupee}
           bgColor="rgba(211, 47, 47, 0.15)"
           borderColor="rgba(211, 47, 47, 0.4)"
@@ -154,8 +157,8 @@ const DashboardPage = () => {
         <StatCard
           label="Avg Order Value"
           value={`₹${data?.metrics?.avg_order_value || '0.00'}`}
-          trendValue="+2.1%"
-          trend="vs last week"
+          trendValue={`₹${data?.metrics?.avg_order_value || '0.00'}`}
+          trend="Overall Average"
           icon={TrendingUp}
           bgColor="rgba(25, 118, 210, 0.15)"
           borderColor="rgba(25, 118, 210, 0.4)"
@@ -165,14 +168,26 @@ const DashboardPage = () => {
         <StatCard
           label="Total Orders"
           value={data?.metrics?.total_orders || '0'}
-          trendValue="+5.4%"
-          trend="new today"
+          trendValue={data?.metrics?.orders_today || '0'}
+          trend="placed today"
           icon={ShoppingCart}
           bgColor="rgba(56, 142, 60, 0.15)"
           borderColor="rgba(56, 142, 60, 0.4)"
           iconColor="#1b5e20"
           loading={loading}
         />
+        <StatCard
+          label="Total Sellers"
+          value={data?.metrics?.total_sellers || '0'}
+          trendValue={data?.metrics?.sellers_today || '0'}
+          trend="joined today"
+          icon={Store}
+          bgColor="rgba(255, 152, 0, 0.15)"
+          borderColor="rgba(255, 152, 0, 0.4)"
+          iconColor="#e65100"
+          loading={loading}
+        />
+
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>

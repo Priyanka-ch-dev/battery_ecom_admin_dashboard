@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Store, CheckCircle, XCircle, Mail, Shield, Loader2, UserCheck, UserX, Search } from 'lucide-react';
+import { 
+  Store, CheckCircle, XCircle, Mail, Shield, 
+  Loader2, UserCheck, UserX, Search, Eye, 
+  FileText, CreditCard, Building2, User 
+} from 'lucide-react';
 import api from '../services/api';
+
 
 const SellersPage = () => {
     const [sellers, setSellers] = useState([]);
@@ -9,6 +14,8 @@ const SellersPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [showVerifyModal, setShowVerifyModal] = useState(false);
+    const [selectedSeller, setSelectedSeller] = useState(null);
     const [formData, setFormData] = useState({
         username: '',
         email: '',
@@ -18,6 +25,7 @@ const SellersPage = () => {
         commission_rate: '0.00',
         phone_number: ''
     });
+
     const [createLoading, setCreateLoading] = useState(false);
 
     const fetchSellers = async (search = '', status = '') => {
@@ -202,20 +210,28 @@ const SellersPage = () => {
                                             <span className="status rejected">Rejected</span>
                                         )}
                                     </td>
-                                     <td className="actions" style={{ padding: '1.25rem', textAlign: 'right' }}>
-                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                                     <td className="actions" style={{ padding: '1.4rem', textAlign: 'right' }}>
+                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                             <button 
+                                               onClick={() => { setSelectedSeller(seller); setShowVerifyModal(true); }}
+                                               style={{ padding: '6px 12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, fontSize: '0.75rem' }}>
+                                                 <Eye size={14} /> Verify
+                                             </button>
                                              <button 
                                                className="approve-btn"
+                                               style={{ fontSize: '0.75rem' }}
                                                onClick={() => handleStatusUpdate(seller.id, 'APPROVED')}>
                                                  Approve
                                              </button>
                                              <button 
                                                className="reject-btn"
+                                               style={{ fontSize: '0.75rem' }}
                                                onClick={() => handleStatusUpdate(seller.id, 'REJECTED')}>
                                                  Reject
                                              </button>
                                          </div>
                                      </td>
+
                                 </tr>
                             ))}
                         </tbody>
@@ -383,8 +399,125 @@ const SellersPage = () => {
                     </div>
                 </div>
             )}
+            {/* Verification Modal */}
+            {showVerifyModal && selectedSeller && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px'
+                }}>
+                    <div className="glass" style={{
+                        background: 'white', padding: '2.5rem', borderRadius: '24px', width: '100%', maxWidth: '900px',
+                        maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                            <div>
+                                <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>Seller Verification Profile</h1>
+                                <p style={{ color: 'var(--text-dim)', fontWeight: 600 }}>{selectedSeller.business_name} • {selectedSeller.email}</p>
+                            </div>
+                            <button onClick={() => setShowVerifyModal(false)} style={{ padding: '8px', borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer' }}><XCircle size={24} /></button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '2rem' }}>
+                            {/* Legal Identity */}
+                            <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem', color: 'var(--purple-main)' }}>
+                                    <Shield size={20} />
+                                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Business & Legal</h2>
+                                </div>
+                                <div style={{ display: 'grid', gap: '1rem', fontSize: '0.9rem' }}>
+                                    <DataRow label="GST Number" value={selectedSeller.gst_number} />
+                                    <DataRow label="PAN Number" value={selectedSeller.pan_number} />
+                                    <DataRow label="Aadhaar Number" value={selectedSeller.aadhaar_number} />
+                                    <DataRow label="Shop License" value={selectedSeller.shop_license_number} />
+                                </div>
+                            </div>
+
+                            {/* Bank Details */}
+                            <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.5rem', color: '#059669' }}>
+                                    <CreditCard size={20} />
+                                    <h2 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Banking Details</h2>
+                                </div>
+                                <div style={{ display: 'grid', gap: '1rem', fontSize: '0.9rem' }}>
+                                    <DataRow label="Acc Holder" value={selectedSeller.bank_account_name} />
+                                    <DataRow label="Bank Name" value={selectedSeller.bank_name} />
+                                    <DataRow label="Acc Number" value={selectedSeller.bank_account_number} />
+                                    <DataRow label="IFSC Code" value={selectedSeller.bank_ifsc} />
+                                </div>
+                            </div>
+                            
+                            {/* Document Viewer */}
+                            <div style={{ gridColumn: 'span 2' }}>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <FileText size={20} /> Document Verification
+                                </h2>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                                    <DocCard label="PAN Card" url={selectedSeller.pan_card_copy} />
+                                    <DocCard label="Aadhaar Card" url={selectedSeller.aadhaar_card_copy} />
+                                    <DocCard label="Shop License" url={selectedSeller.shop_license_copy} />
+                                    <DocCard label="Auth Letter" url={selectedSeller.authorized_letter} />
+                                    <DocCard label="Bank Passbook" url={selectedSeller.bank_passbook_copy} />
+                                    <DocCard label="Shop Image" url={selectedSeller.shop_image} isImage />
+                                    <DocCard label="Owner Image" url={selectedSeller.owner_image} isImage />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '2.5rem', paddingTop: '2rem', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button 
+                                onClick={() => { handleStatusUpdate(selectedSeller.id, 'REJECTED'); setShowVerifyModal(false); }}
+                                style={{ padding: '12px 24px', borderRadius: '12px', background: '#fee2e2', color: '#dc2626', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
+                                Reject Application
+                            </button>
+                            <button 
+                                onClick={() => { handleStatusUpdate(selectedSeller.id, 'APPROVED'); setShowVerifyModal(false); }}
+                                style={{ padding: '12px 48px', borderRadius: '12px', background: 'var(--purple-main)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(111, 66, 193, 0.3)' }}>
+                                Approve Seller
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Helper Components
+const DataRow = ({ label, value }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+        <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>{label}</span>
+        <span style={{ fontWeight: 800 }}>{value || 'N/A'}</span>
+    </div>
+);
+
+const DocCard = ({ label, url, isImage }) => {
+    const handleDownload = () => {
+        if (url) window.open(url, '_blank');
+    };
+
+    return (
+        <div 
+            onClick={handleDownload}
+            style={{ 
+                background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', 
+                cursor: url ? 'pointer' : 'default', opacity: url ? 1 : 0.5, transition: '0.2s',
+                display: 'flex', flexDirection: 'column', gap: '8px'
+            }}
+            className="doc-card"
+        >
+            <div style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-dim)' }}>{label}</div>
+            {url && isImage ? (
+                <img src={url} alt={label} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '6px' }} />
+            ) : (
+                <div style={{ height: '80px', background: '#f8fafc', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FileText size={24} color="#94A3B8" />
+                </div>
+            )}
+            <div style={{ fontSize: '11px', fontWeight: 700, textAlign: 'center' }}>{url ? 'View Document' : 'Missing'}</div>
+            <style>{`.doc-card:hover { transform: translateY(-2px); border-color: var(--purple-main); }`}</style>
         </div>
     );
 };
 
 export default SellersPage;
+

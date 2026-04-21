@@ -196,7 +196,7 @@ const PaymentsPage = () => {
                                         <div style={{ fontWeight: 900, color: '#000' }}>₹{tx?.amount || 0}</div>
                                         {tx?.seller_settlement_status === 'SETTLED' && (
                                             <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px', marginTop: '2px' }}>
-                                                <CheckCircle2 size={10} /> SETTLED
+                                                
                                             </div>
                                         )}
                                     </td>
