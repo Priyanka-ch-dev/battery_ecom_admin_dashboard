@@ -130,12 +130,16 @@ const ProductsPage = () => {
                 category: product.category,
                 brand: product.brand,
                 is_active: product.is_active,
-                warranty: product.warranty || ''
+                warranty: product.warranty || '',
+                images: product.images ? product.images.map(img => ({ url: img.image })) : []
             });
             // Reset image/spec state for editing
             setImageFiles([]);
-            setSpecRows([{ key: '', value: '' }]);
-            setPrimaryImageIndex(null);
+            const existingSpecs = product.specifications && product.specifications.length > 0 
+                ? product.specifications.map(s => ({ key: s.key, value: s.value })) 
+                : [{ key: '', value: '' }];
+            setSpecRows(existingSpecs);
+            setPrimaryImageIndex(product.images ? product.images.findIndex(img => img.is_primary) : null);
         } else {
             setEditingProduct(null);
             setFormData({
@@ -591,6 +595,36 @@ const updateSpec = (index, field, value) => {
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <label style={{ margin: 0 }}>Specifications</label>
+                                        <button type="button" onClick={addSpec} style={{ padding: '4px 8px', fontSize: '0.75rem', background: 'var(--red-main)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+ Add Row</button>
+                                    </div>
+                                    {specRows.map((spec, idx) => (
+                                        <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                                            <input 
+                                                placeholder="Key (e.g. Dimensions)" 
+                                                value={spec.key} 
+                                                onChange={e => updateSpec(idx, 'key', e.target.value)} 
+                                                style={{ flex: 1 }} 
+                                            />
+                                            <input 
+                                                placeholder="Value (e.g. 10x20x30 cm)" 
+                                                value={spec.value} 
+                                                onChange={e => updateSpec(idx, 'value', e.target.value)} 
+                                                style={{ flex: 2 }} 
+                                            />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => removeSpec(idx)} 
+                                                style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
