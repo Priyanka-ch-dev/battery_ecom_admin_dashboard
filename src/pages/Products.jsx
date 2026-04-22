@@ -22,7 +22,7 @@ const ProductsPage = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         name: '', slug: '', sku: '', description: '', price: '', stock: '',
-        category: '', brand: '', is_active: true
+        category: '', brand: '', is_active: true, warranty: ''
     });
     // Separate state for images and specifications
     const [imageFiles, setImageFiles] = useState([]); // array of File objects
@@ -129,7 +129,8 @@ const ProductsPage = () => {
                 stock: product.stock,
                 category: product.category,
                 brand: product.brand,
-                is_active: product.is_active
+                is_active: product.is_active,
+                warranty: product.warranty || ''
             });
             // Reset image/spec state for editing
             setImageFiles([]);
@@ -139,7 +140,7 @@ const ProductsPage = () => {
             setEditingProduct(null);
             setFormData({
                 name: '', slug: '', sku: '', description: '', price: '', stock: '',
-                category: '', brand: '', is_active: true
+                category: '', brand: '', is_active: true, warranty: ''
             });
             setImageFiles([]);
             setSpecRows([{ key: '', value: '' }]);
@@ -163,6 +164,7 @@ const ProductsPage = () => {
             productFd.append('price', formData.price);
             productFd.append('stock', formData.stock);
             productFd.append('is_active', formData.is_active);
+            if (formData.warranty) productFd.append('warranty', formData.warranty);
             if (formData.category) productFd.append('category', formData.category);
             if (formData.brand) productFd.append('brand', formData.brand);
 
@@ -531,6 +533,10 @@ const updateSpec = (index, field, value) => {
                                 <div className="input-group">
                                     <label>Stock</label>
                                     <input required type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Warranty</label>
+                                    <input value={formData.warranty} onChange={e => setFormData({...formData, warranty: e.target.value})} placeholder="e.g. 1 Year, 6 Months" />
                                 </div>
                                 <div className="input-group">
                                     <label>Category</label>
