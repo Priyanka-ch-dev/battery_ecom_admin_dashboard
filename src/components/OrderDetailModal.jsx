@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     X, User, Mail, Phone, MapPin, Package,
     CreditCard, Truck, CheckCircle2, AlertCircle,
-    IndianRupee, Calendar, Clock, Hash, Store
+    IndianRupee, Calendar, Clock, Hash, Store, RefreshCcw
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -59,6 +59,15 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                         }}>
                             <CheckCircle2 size={12} /> {order?.status_display || 'Loading...'}
                         </div>
+                        {order?.is_exchange && (
+                            <div style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                marginLeft: '8px', padding: '4px 12px', borderRadius: '20px',
+                                background: '#3b82f615', color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700
+                            }}>
+                                <RefreshCcw size={12} /> EXCHANGE ORDER
+                            </div>
+                        )}
                     </div>
                     <button onClick={onClose} style={{
                         background: '#f1f5f9', border: 'none', width: '40px', height: '40px',
@@ -176,8 +185,13 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                                                 <td style={{ padding: '16px 20px' }}>
                                                     <div style={{ fontWeight: 700, color: '#000' }}>{item.product_name}</div>
                                                     <div style={{ fontSize: '0.7rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                        <Store size={10} /> {item.seller_name}
+                                                    <Store size={10} /> {item.seller_name}
                                                     </div>
+                                                    {item.is_exchange && (
+                                                        <div style={{ fontSize: '0.65rem', color: '#3b82f6', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <RefreshCcw size={10} /> Exchange Applied (-₹{item.exchange_discount})
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td style={{ padding: '16px 20px', textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
                                                 <td style={{ padding: '16px 20px', textAlign: 'right', color: '#64748b' }}>₹{item.price}</td>

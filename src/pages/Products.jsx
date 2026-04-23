@@ -10,6 +10,10 @@ const ProductsPage = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [makes, setMakes] = useState([]);
+    const [models, setModels] = useState([]);
+    const [states, setStates] = useState([]);
+    const [cities, setCities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -22,7 +26,9 @@ const ProductsPage = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         name: '', slug: '', sku: '', description: '', price: '', stock: '',
-        category: '', brand: '', is_active: true, warranty: ''
+        category: '', brand: '', is_active: true, warranty: '',
+        make: '', model: '', state: '', city: '',
+        exchange_available: false, exchange_discount: 0
     });
     // Separate state for images and specifications
     const [imageFiles, setImageFiles] = useState([]); // array of File objects
@@ -30,6 +36,16 @@ const ProductsPage = () => {
     const [primaryImageIndex, setPrimaryImageIndex] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [buyingProduct, setBuyingProduct] = useState(null);
+
+    // Combo State
+    const [combos, setCombos] = useState([]);
+    const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+    const [comboFormData, setComboFormData] = useState({
+        name: '', price: '', inverter: '', battery: '', is_active: true
+    });
+    const [comboImageFile, setComboImageFile] = useState(null);
+    const [comboSubmitting, setComboSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState('products'); // 'products' or 'combos'
 
     const slugify = (text) => {
         return text.toString().toLowerCase()
@@ -58,10 +74,13 @@ const ProductsPage = () => {
             if (brand) query += `&brand=${brand}`;
             if (status !== 'all') query += `&is_active=${status === 'active'}`;
 
-            const [prodRes, catRes, brandRes] = await Promise.all([
+            const [prodRes, catRes, brandRes, comboRes, makeRes, stateRes] = await Promise.all([
                 api.get(query),
                 api.get('products/categories/'),
-                api.get('products/brands/')
+                api.get('products/brands/'),
+                api.get('products/combos/'),
+                api.get('products/makes/'),
+                api.get('locations/states/')
             ]);
             
             // Handle DRF Pagination (results) or simple list
@@ -72,9 +91,12 @@ const ProductsPage = () => {
             }
             
             setProducts(productsData);
+            setCombos(comboRes.data.results || comboRes.data || []);
             setCategories(Array.isArray(catRes.data.results) ? catRes.data.results : (Array.isArray(catRes.data) ? catRes.data : []));
             setBrands(Array.isArray(brandRes.data.results) ? brandRes.data.results : (Array.isArray(brandRes.data) ? brandRes.data : []));
-            console.log('Inventory loaded successfully:', { count: productsData.length });
+            setMakes(Array.isArray(makeRes.data.results) ? makeRes.data.results : (Array.isArray(makeRes.data) ? makeRes.data : []));
+            setStates(Array.isArray(stateRes.data.results) ? stateRes.data.results : (Array.isArray(stateRes.data) ? stateRes.data : []));
+            console.log('Inventory loaded successfully:', { count: productsData.length, comboCount: (comboRes.data.results || comboRes.data || []).length });
         } catch (err) {
             console.error('Products Fetch Error:', {
                 status: err.response?.status,
@@ -91,13 +113,46 @@ const ProductsPage = () => {
         fetchData();
     }, []);
 
-    // Debounced search effect
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchData(searchTerm, categoryFilter, brandFilter, statusFilter);
         }, 300);
         return () => clearTimeout(timeoutId);
     }, [searchTerm, categoryFilter, brandFilter, statusFilter]);
+
+    // Fetch models when make changes
+    useEffect(() => {
+        const fetchModels = async () => {
+            if (formData.make) {
+                try {
+                    const res = await api.get(`products/models/?make_id=${formData.make}`);
+                    setModels(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []));
+                } catch (err) {
+                    console.error('Error fetching models:', err);
+                }
+            } else {
+                setModels([]);
+            }
+        };
+        fetchModels();
+    }, [formData.make]);
+
+    // Fetch cities when state changes
+    useEffect(() => {
+        const fetchCities = async () => {
+            if (formData.state) {
+                try {
+                    const res = await api.get(`locations/cities/?state_id=${formData.state}`);
+                    setCities(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []));
+                } catch (err) {
+                    console.error('Error fetching cities:', err);
+                }
+            } else {
+                setCities([]);
+            }
+        };
+        fetchCities();
+    }, [formData.state]);
 
     const handleBuy = async (productId) => {
         setBuyingProduct(productId);
@@ -131,6 +186,12 @@ const ProductsPage = () => {
                 brand: product.brand,
                 is_active: product.is_active,
                 warranty: product.warranty || '',
+                make: product.make || '',
+                model: product.model || '',
+                state: product.state || '',
+                city: product.city || '',
+                exchange_available: product.exchange_available || false,
+                exchange_discount: product.exchange_discount || 0,
                 images: product.images ? product.images.map(img => ({ url: img.image })) : []
             });
             // Reset image/spec state for editing
@@ -144,7 +205,9 @@ const ProductsPage = () => {
             setEditingProduct(null);
             setFormData({
                 name: '', slug: '', sku: '', description: '', price: '', stock: '',
-                category: '', brand: '', is_active: true, warranty: ''
+                category: '', brand: '', is_active: true, warranty: '',
+                make: '', model: '', state: '', city: '',
+                exchange_available: false, exchange_discount: 0
             });
             setImageFiles([]);
             setSpecRows([{ key: '', value: '' }]);
@@ -171,6 +234,12 @@ const ProductsPage = () => {
             if (formData.warranty) productFd.append('warranty', formData.warranty);
             if (formData.category) productFd.append('category', formData.category);
             if (formData.brand) productFd.append('brand', formData.brand);
+            if (formData.make) productFd.append('make', formData.make);
+            if (formData.model) productFd.append('model', formData.model);
+            if (formData.state) productFd.append('state', formData.state);
+            if (formData.city) productFd.append('city', formData.city);
+            productFd.append('exchange_available', formData.exchange_available);
+            productFd.append('exchange_discount', formData.exchange_discount);
 
             console.log('--- STEP 1: CREATE PRODUCT ---');
             console.log('Product Request sent as Form Data due to backend parser constraints.');
@@ -257,6 +326,49 @@ const ProductsPage = () => {
         }
     };
 
+    const handleComboSubmit = async (e) => {
+        e.preventDefault();
+        setComboSubmitting(true);
+        try {
+            const fd = new FormData();
+            fd.append('name', comboFormData.name);
+            fd.append('price', comboFormData.price);
+            fd.append('inverter', comboFormData.inverter);
+            fd.append('battery', comboFormData.battery);
+            fd.append('is_active', comboFormData.is_active);
+            if (comboImageFile) {
+                fd.append('image', comboImageFile);
+            }
+
+            await api.post('products/combos/', fd, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            setIsComboModalOpen(false);
+            setComboFormData({ name: '', price: '', inverter: '', battery: '', is_active: true });
+            setComboImageFile(null);
+            fetchData();
+            alert('Combo created successfully!');
+        } catch (err) {
+            console.error('Combo Create Error:', err.response?.data);
+            const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Failed to create combo. Check if Inverter and Battery are different.';
+            alert(errorMsg);
+        } finally {
+            setComboSubmitting(false);
+        }
+    };
+
+    const handleDeleteCombo = async (id) => {
+        if (window.confirm('Are you sure you want to delete this combo?')) {
+            try {
+                await api.delete(`products/combos/${id}/`);
+                fetchData();
+            } catch (err) {
+                alert('Delete failed.');
+            }
+        }
+    };
+
     // HANDLE IMAGE UPLOAD
 const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -320,27 +432,70 @@ const updateSpec = (index, field, value) => {
                         <>
                             <button onClick={() => navigate('/categories')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Categories</button>
                             <button onClick={() => navigate('/brands')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Brands</button>
+                            <button onClick={() => navigate('/vehicles')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Vehicles</button>
+                            <button onClick={() => navigate('/locations')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Locations</button>
                             <button 
-                              onClick={() => handleOpenModal()}
-                              className="glass" 
-                              style={{ 
-                                padding: '0.75rem 1.5rem', 
-                                borderRadius: '12px', 
-                                background: 'var(--grad-purple)', 
-                                border: 'none', 
-                                color: 'white', 
-                                fontWeight: 600, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '8px', 
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 15px rgba(218, 140, 255, 0.3)'
-                              }}>
+                                onClick={() => setIsComboModalOpen(true)}
+                                className="glass action-btn" 
+                                style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'white', border: 'none', background: 'var(--grad-blue, #3b82f6)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                            >
+                                <Plus size={16} style={{ marginRight: '4px' }} /> Create Combo
+                            </button>
+                            <button 
+                                onClick={() => handleOpenModal()}
+                                className="glass" 
+                                style={{ 
+                                    padding: '0.75rem 1.5rem', 
+                                    borderRadius: '12px', 
+                                    background: 'var(--grad-purple)', 
+                                    border: 'none', 
+                                    color: 'white', 
+                                    fontWeight: 600, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '8px', 
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 15px rgba(218, 140, 255, 0.3)'
+                                }}>
                                 <Plus size={18} /> Add Product
                             </button>
                         </>
                     )}
                 </div>
+            </div>
+
+            {/* Tab Switcher */}
+            <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
+                <button 
+                    onClick={() => setActiveTab('products')}
+                    style={{ 
+                        padding: '0.5rem 1rem', 
+                        background: 'none', 
+                        border: 'none', 
+                        borderBottom: activeTab === 'products' ? '3px solid var(--red-main)' : '3px solid transparent',
+                        color: activeTab === 'products' ? 'var(--red-main)' : 'var(--text-dim)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '1rem'
+                    }}
+                >
+                    Standard Products
+                </button>
+                <button 
+                    onClick={() => setActiveTab('combos')}
+                    style={{ 
+                        padding: '0.5rem 1rem', 
+                        background: 'none', 
+                        border: 'none', 
+                        borderBottom: activeTab === 'combos' ? '3px solid var(--red-main)' : '3px solid transparent',
+                        color: activeTab === 'combos' ? 'var(--red-main)' : 'var(--text-dim)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '1rem'
+                    }}
+                >
+                    Combo Packs ({combos.length})
+                </button>
             </div>
 
             {/* Toolbar & Filters */}
@@ -397,104 +552,165 @@ const updateSpec = (index, field, value) => {
             </div>
 
             {/* Product Table */}
-            <div className="glass" style={{ borderRadius: '12px', overflow: 'hidden', background: 'var(--card-bg)', border: '1px solid var(--glass-border)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
-                            <tr>
-                                <th style={{ padding: '1.25rem' }}>Product</th>
-                                <th style={{ padding: '1.25rem' }}>SKU</th>
-                                <th style={{ padding: '1.25rem' }}>Category</th>
-                                <th style={{ padding: '1.25rem' }}>Price</th>
-                                <th style={{ padding: '1.25rem' }}>Stock</th>
-                                <th style={{ padding: '1.25rem' }}>Status</th>
-                                <th style={{ padding: '1.25rem', textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
+            {activeTab === 'products' ? (
+                <div className="glass" style={{ borderRadius: '12px', overflow: 'hidden', background: 'var(--card-bg)', border: '1px solid var(--glass-border)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
                                 <tr>
-                                    <td colSpan="7" style={{ padding: '4rem', textAlign: 'center' }}>
-                                        <Loader2 className="animate-spin" size={32} color="var(--primary-glow)" />
-                                    </td>
+                                    <th style={{ padding: '1.25rem' }}>Product</th>
+                                    <th style={{ padding: '1.25rem' }}>SKU</th>
+                                    <th style={{ padding: '1.25rem' }}>Category</th>
+                                    <th style={{ padding: '1.25rem' }}>Price</th>
+                                    <th style={{ padding: '1.25rem' }}>Stock</th>
+                                    <th style={{ padding: '1.25rem' }}>Status</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'right' }}>Actions</th>
                                 </tr>
-                            ) : filteredProducts.length === 0 ? (
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="7" style={{ padding: '4rem', textAlign: 'center' }}>
+                                            <Loader2 className="animate-spin" size={32} color="var(--primary-glow)" />
+                                        </td>
+                                    </tr>
+                                ) : filteredProducts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-dim)' }}>
+                                            {searchTerm ? 'No products found matching your search.' : 'No products available in inventory.'}
+                                        </td>
+                                    </tr>
+                                ) : filteredProducts.map((p) => (
+                                    <tr key={p.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{p.name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>{getBrandName(p.brand)}</div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem', color: 'var(--text-dim)', fontSize: '0.875rem' }}>{p.sku}</td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
+                                                {getCategoryName(p.category)}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1.25rem', fontWeight: 800, color: 'var(--red-main)', fontSize: '1rem' }}>₹{p.price}</td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ color: p.stock < 10 ? '#ef4444' : 'var(--text-main, #1f2937)', fontWeight: 500 }}>{p.stock} units</div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ 
+                                                padding: '4px 12px', 
+                                                borderRadius: '20px', 
+                                                fontSize: '0.7rem', 
+                                                background: p.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                color: p.is_active ? '#22c55e' : '#ef4444',
+                                                display: 'inline-block'
+                                            }}>
+                                                {p.is_active ? 'Active' : 'Hidden'}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem', textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                {user?.role === 'CUSTOMER' && (
+                                                    <button 
+                                                        onClick={() => handleBuy(p.id)} 
+                                                        disabled={buyingProduct === p.id}
+                                                        className="action-btn buy" 
+                                                        style={{ 
+                                                            padding: '6px 12px', 
+                                                            borderRadius: '8px', 
+                                                            border: 'none', 
+                                                            cursor: buyingProduct === p.id ? 'not-allowed' : 'pointer', 
+                                                            background: 'var(--grad-purple)',
+                                                            color: 'white',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            fontWeight: 600,
+                                                            fontSize: '0.85rem'
+                                                        }}
+                                                    >
+                                                        {buyingProduct === p.id ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />} 
+                                                        {buyingProduct === p.id ? 'Wait...' : 'Buy'}
+                                                    </button>
+                                                )}
+                                                {(user?.role === 'ADMIN' || user?.role === 'SELLER') && (
+                                                    <>
+                                                        <button onClick={() => handleOpenModal(p)} className="action-btn" style={{ padding: '6px', borderRadius: '8px', border: '1px solid var(--glass-border, #e5e7eb)', cursor: 'pointer', background: 'transparent', color: 'var(--text-main, #3b82f6)' }}>
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                        <button onClick={() => handleDelete(p.id)} className="action-btn delete" style={{ padding: '6px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', background: 'transparent', color: '#ef4444' }}>
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ) : (
+                /* Combo Table */
+                <div className="glass" style={{ borderRadius: '12px', overflow: 'hidden', background: 'var(--card-bg)', border: '1px solid var(--glass-border)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
                                 <tr>
-                                    <td colSpan="7" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-dim)' }}>
-                                        {searchTerm ? 'No products found matching your search.' : 'No products available in inventory.'}
-                                    </td>
+                                    <th style={{ padding: '1.25rem' }}>Combo Name</th>
+                                    <th style={{ padding: '1.25rem' }}>Components</th>
+                                    <th style={{ padding: '1.25rem' }}>Price</th>
+                                    <th style={{ padding: '1.25rem' }}>Status</th>
+                                    <th style={{ padding: '1.25rem', textAlign: 'right' }}>Actions</th>
                                 </tr>
-                            ) : filteredProducts.map((p) => (
-                                <tr key={p.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
-                                    <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{p.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>{getBrandName(p.brand)}</div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem', color: 'var(--text-dim)', fontSize: '0.875rem' }}>{p.sku}</td>
-                                    <td style={{ padding: '1.25rem' }}>
-                                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)' }}>
-                                            {getCategoryName(p.category)}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1.25rem', fontWeight: 800, color: 'var(--red-main)', fontSize: '1rem' }}>₹{p.price}</td>
-                                    <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ color: p.stock < 10 ? '#ef4444' : 'var(--text-main, #1f2937)', fontWeight: 500 }}>{p.stock} units</div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ 
-                                            padding: '4px 12px', 
-                                            borderRadius: '20px', 
-                                            fontSize: '0.7rem', 
-                                            background: p.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                            color: p.is_active ? '#22c55e' : '#ef4444',
-                                            display: 'inline-block'
-                                        }}>
-                                            {p.is_active ? 'Active' : 'Hidden'}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                            {user?.role === 'CUSTOMER' && (
-                                                <button 
-                                                    onClick={() => handleBuy(p.id)} 
-                                                    disabled={buyingProduct === p.id}
-                                                    className="action-btn buy" 
-                                                    style={{ 
-                                                        padding: '6px 12px', 
-                                                        borderRadius: '8px', 
-                                                        border: 'none', 
-                                                        cursor: buyingProduct === p.id ? 'not-allowed' : 'pointer', 
-                                                        background: 'var(--grad-purple)',
-                                                        color: 'white',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        fontWeight: 600,
-                                                        fontSize: '0.85rem'
-                                                    }}
-                                                >
-                                                    {buyingProduct === p.id ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />} 
-                                                    {buyingProduct === p.id ? 'Wait...' : 'Buy'}
+                            </thead>
+                            <tbody>
+                                {combos.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="5" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-dim)' }}>
+                                            No combo packs available.
+                                        </td>
+                                    </tr>
+                                ) : combos.map((c) => (
+                                    <tr key={c.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{c.name}</div>
+                                            {c.image && <img src={c.image} alt={c.name} style={{ width: '40px', height: '40px', borderRadius: '4px', marginTop: '4px' }} />}
+                                        </td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ fontSize: '0.85rem' }}>
+                                                <strong>Inverter:</strong> {c.inverter_name}<br/>
+                                                <strong>Battery:</strong> {c.battery_name}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem', fontWeight: 800, color: 'var(--red-main)', fontSize: '1.1rem' }}>₹{c.price}</td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ 
+                                                padding: '4px 12px', 
+                                                borderRadius: '20px', 
+                                                fontSize: '0.7rem', 
+                                                background: c.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                color: c.is_active ? '#22c55e' : '#ef4444',
+                                                display: 'inline-block'
+                                            }}>
+                                                {c.is_active ? 'Active' : 'Inactive'}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem', textAlign: 'right' }}>
+                                            {user?.role === 'ADMIN' && (
+                                                <button onClick={() => handleDeleteCombo(c.id)} className="action-btn delete" style={{ padding: '6px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', background: 'transparent', color: '#ef4444' }}>
+                                                    <Trash2 size={16} />
                                                 </button>
                                             )}
-                                            {(user?.role === 'ADMIN' || user?.role === 'SELLER') && (
-                                                <>
-                                                    <button onClick={() => handleOpenModal(p)} className="action-btn" style={{ padding: '6px', borderRadius: '8px', border: '1px solid var(--glass-border, #e5e7eb)', cursor: 'pointer', background: 'transparent', color: 'var(--text-main, #3b82f6)' }}>
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(p.id)} className="action-btn delete" style={{ padding: '6px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', background: 'transparent', color: '#ef4444' }}>
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Modal for Add/Edit */}
             {isModalOpen && (
@@ -555,6 +771,63 @@ const updateSpec = (index, field, value) => {
                                         <option value="">Select Brand</option>
                                         {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                     </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Vehicle Make</label>
+                                    <select value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})}>
+                                        <option value="">Select Make</option>
+                                        {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Vehicle Model</label>
+                                    <select value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})}>
+                                        <option value="">Select Model</option>
+                                        {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>State</label>
+                                    <select value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})}>
+                                        <option value="">Select State</option>
+                                        {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>City</label>
+                                    <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})}>
+                                        <option value="">Select City</option>
+                                        {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '25px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="exchange_available" 
+                                        checked={formData.exchange_available} 
+                                        onChange={e => setFormData({...formData, exchange_available: e.target.checked})} 
+                                    />
+                                    <label htmlFor="exchange_available" style={{ margin: 0 }}>Exchange Available</label>
+                                </div>
+                                {formData.exchange_available && (
+                                    <div className="input-group">
+                                        <label>Exchange Discount (₹)</label>
+                                        <input 
+                                            type="number" 
+                                            value={formData.exchange_discount} 
+                                            onChange={e => setFormData({...formData, exchange_discount: e.target.value})} 
+                                            placeholder="Discount amount for old battery"
+                                        />
+                                    </div>
+                                )}
+                                <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '25px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="is_active" 
+                                        checked={formData.is_active} 
+                                        onChange={e => setFormData({...formData, is_active: e.target.checked})} 
+                                    />
+                                    <label htmlFor="is_active" style={{ margin: 0 }}>Product Active/Visible</label>
                                 </div>
                                 <div className="input-group" style={{ gridColumn: 'span 2' }}>
                                     <label>Description</label>
@@ -637,6 +910,65 @@ const updateSpec = (index, field, value) => {
                                 boxShadow: '0 4px 15px rgba(211, 47, 47, 0.3)'
                             }}>
                                 <Save size={18} /> {editingProduct ? 'Update Changes' : 'Create Product'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+            {/* Combo Modal */}
+            {isComboModalOpen && (
+                <div className="modal-overlay" style={{ 
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' 
+                }}>
+                    <form onSubmit={handleComboSubmit} className="glass" style={{ 
+                        width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column',
+                        borderRadius: '24px', maxHeight: '90vh', overflow: 'hidden', position: 'relative' 
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid var(--glass-border)', background: '#f8fafc' }}>
+                            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#000' }}>Create Combo Pack</h2>
+                            <button type="button" onClick={() => setIsComboModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div style={{ padding: '2rem', overflowY: 'auto', flex: 1 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div className="input-group">
+                                    <label>Combo Name</label>
+                                    <input required value={comboFormData.name} onChange={e => setComboFormData({...comboFormData, name: e.target.value})} placeholder="e.g. Inverter + 150Ah Battery" />
+                                </div>
+                                <div className="input-group">
+                                    <label>Combo Price (₹)</label>
+                                    <input required type="number" step="0.01" value={comboFormData.price} onChange={e => setComboFormData({...comboFormData, price: e.target.value})} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Select Inverter</label>
+                                    <select required value={comboFormData.inverter} onChange={e => setComboFormData({...comboFormData, inverter: e.target.value})}>
+                                        <option value="">Select a Product</option>
+                                        {products.map(p => <option key={p.id} value={p.id}>{p.name} (₹{p.price})</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Select Battery</label>
+                                    <select required value={comboFormData.battery} onChange={e => setComboFormData({...comboFormData, battery: e.target.value})}>
+                                        <option value="">Select a Product</option>
+                                        {products.map(p => <option key={p.id} value={p.id}>{p.name} (₹{p.price})</option>)}
+                                    </select>
+                                </div>
+                                <div className="input-group">
+                                    <label>Combo Image</label>
+                                    <input type="file" onChange={e => setComboImageFile(e.target.files[0])} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: '1rem', justifyContent: 'flex-end', background: '#fff' }}>
+                            <button type="button" onClick={() => setIsComboModalOpen(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', background: 'transparent', border: '1px solid #ced4da', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
+                            <button type="submit" disabled={comboSubmitting} style={{ 
+                                padding: '0.75rem 2rem', borderRadius: '12px', background: 'var(--grad-blue, #3b82f6)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                            }}>
+                                {comboSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Create Combo
                             </button>
                         </div>
                     </form>
