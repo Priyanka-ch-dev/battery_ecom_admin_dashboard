@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Truck, User, Calendar, CreditCard, Loader2, AlertCircle, ExternalLink, ChevronDown, Search } from 'lucide-react';
 import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
 import OrderDetailModal from '../components/OrderDetailModal';
 
 const OrdersPage = () => {
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [sellers, setSellers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -149,11 +151,14 @@ const OrdersPage = () => {
                                     </td>
                                 </tr>
                             ) : orders.map((order) => (
-                                <tr key={order.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
+                                <tr key={order.id} 
+                                    onClick={() => navigate(`/orders/${order.id}`)}
+                                    style={{ borderBottom: '1px solid var(--glass-border)', cursor: 'pointer' }} 
+                                    className="table-row"
+                                >
                                     <td style={{ padding: '1.25rem' }}>
                                         <div 
-                                            onClick={() => setSelectedOrderId(order.id)}
-                                            style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', cursor: 'pointer' }}
+                                            style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}
                                             className="hover-text-red"
                                         >
                                             <Package size={16} color="var(--red-main)" />
@@ -164,14 +169,14 @@ const OrdersPage = () => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{order.user_email || 'Verified Buyer'}</div>
+                                        <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{order.customer_name || 'Verified Buyer'}</div>
                                         <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '2px' }}>{order.shipping_address?.substring(0, 30)}...</div>
                                     </td>
                                     <td style={{ padding: '1.25rem' }}>
                                         <div style={{ color: 'var(--red-main)', fontWeight: 800, fontSize: '1.1rem' }}>₹{order.grand_total}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>via {order.payment_method || 'Online'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>via {order.payment_method?.toUpperCase() || 'COD'}</div>
                                     </td>
-                                    <td style={{ padding: '1.25rem' }}>
+                                    <td style={{ padding: '1.25rem' }} onClick={(e) => e.stopPropagation()}>
                                         <select 
                                             value={order.status}
                                             onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
@@ -194,7 +199,7 @@ const OrdersPage = () => {
                                             <option value="CANCELLED">CANCELLED</option>
                                         </select>
                                     </td>
-                                    <td style={{ padding: '1.25rem', minWidth: '240px' }}>
+                                    <td style={{ padding: '1.25rem', minWidth: '240px' }} onClick={(e) => e.stopPropagation()}>
                                         {order.status === 'PENDING' || order.status === 'CONFIRMED' || order.status === 'ASSIGNED' ? (
                                             <div style={{ position: 'relative', width: '100%' }}>
                                                 <select 
@@ -217,7 +222,7 @@ const OrdersPage = () => {
                                                     <option value="">Choose Seller...</option>
                                                     {sellers.map(seller => (
                                                         <option key={seller.id} value={seller.user}>
-                                                            {seller.business_name} ({seller.email})
+                                                            {seller.seller_name}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -227,7 +232,7 @@ const OrdersPage = () => {
                                             </div>
                                         ) : (
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <User size={14} /> Assigned to ID: {order.delivery_person || 'N/A'}
+                                                <User size={14} /> {order.delivery_person_name || 'N/A'}
                                             </div>
                                         )}
                                     </td>

@@ -115,6 +115,7 @@ const ServiceableCitiesPage = () => {
                     <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
                         <tr>
                             <th style={{ padding: '1.25rem' }}>City</th>
+                            <th style={{ padding: '1.25rem' }}>State</th>
                             <th style={{ padding: '1.25rem' }}>Status</th>
                             <th style={{ padding: '1.25rem', textAlign: 'right' }}>Actions</th>
                         </tr>
@@ -131,6 +132,7 @@ const ServiceableCitiesPage = () => {
                         ) : serviceableCities.map(item => (
                             <tr key={item.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                                 <td style={{ padding: '1.25rem', fontWeight: 600 }}>{item.city_name}</td>
+                                <td style={{ padding: '1.25rem', color: 'var(--text-dim)' }}>{item.state_name}</td>
                                 <td style={{ padding: '1.25rem' }}>
                                     <div 
                                         onClick={() => toggleAvailability(item)}

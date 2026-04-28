@@ -57,7 +57,7 @@ const SellersPage = () => {
 
     const handleStatusUpdate = async (id, newStatus) => {
         try {
-            await api.patch(`sellers/${id}/`, { status: newStatus });
+            await api.patch(`sellers/${id}/update_status/`, { status: newStatus });
             fetchSellers(); // Refresh the list
         } catch (err) {
             console.error('Status update failed:', err);
@@ -178,7 +178,11 @@ const SellersPage = () => {
                             ) : sellers.map((seller) => (
                                 <tr key={seller.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
                                     <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div 
+                                            onClick={() => window.location.href = `/sellers/${seller.id}`}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                                            className="hover-translate"
+                                        >
                                             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Store size={20} color="var(--primary-glow)" />
                                             </div>
@@ -231,13 +235,20 @@ const SellersPage = () => {
                                              </button>
                                          </div>
                                      </td>
-
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
             </div>
+            <style>
+                {`
+                    .hover-translate:hover {
+                        transform: translateX(5px);
+                        transition: transform 0.2s ease;
+                    }
+                `}
+            </style>
 
 
             {/* Add Seller Modal */}

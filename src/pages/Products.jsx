@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Save, Loader2, AlertCircle, ShoppingCart } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Save, Loader2, AlertCircle, ShoppingCart, Box } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -20,7 +20,7 @@ const ProductsPage = () => {
     const [categoryFilter, setCategoryFilter] = useState('');
     const [brandFilter, setBrandFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
-    
+
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -31,7 +31,6 @@ const ProductsPage = () => {
         exchange_available: false, exchange_discount: 0
     });
     // Separate state for images and specifications
-    const [imageFiles, setImageFiles] = useState([]); // array of File objects
     const [specRows, setSpecRows] = useState([{ key: '', value: '' }]);
     const [primaryImageIndex, setPrimaryImageIndex] = useState(null);
     const [submitting, setSubmitting] = useState(false);
@@ -41,11 +40,27 @@ const ProductsPage = () => {
     const [combos, setCombos] = useState([]);
     const [isComboModalOpen, setIsComboModalOpen] = useState(false);
     const [comboFormData, setComboFormData] = useState({
-        name: '', price: '', inverter: '', battery: '', is_active: true
+        name: '', slug: '', sku: '', price: '', inverter: '', battery: '', 
+        is_active: true, warranty: '', make: '', model: '', state: '', city: ''
     });
     const [comboImageFile, setComboImageFile] = useState(null);
+    const [comboImagePreview, setComboImagePreview] = useState(null);
     const [comboSubmitting, setComboSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState('products'); // 'products' or 'combos'
+
+    const handleComboImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setComboImageFile(file);
+            setComboImagePreview(URL.createObjectURL(file));
+        }
+        e.target.value = null;
+    };
+
+    const removeComboImage = () => {
+        setComboImageFile(null);
+        setComboImagePreview(null);
+    };
 
     const slugify = (text) => {
         return text.toString().toLowerCase()
@@ -68,7 +83,7 @@ const ProductsPage = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
             let query = `products/?search=${search}`;
             if (cat) query += `&category=${cat}`;
             if (brand) query += `&brand=${brand}`;
@@ -82,14 +97,14 @@ const ProductsPage = () => {
                 api.get('products/makes/'),
                 api.get('locations/states/')
             ]);
-            
+
             // Handle DRF Pagination (results) or simple list
             const productsData = prodRes.data.results || prodRes.data;
             if (!Array.isArray(productsData)) {
                 console.error('API Error: Product data is not an array', prodRes.data);
                 throw new Error('Invalid data format received from server');
             }
-            
+
             setProducts(productsData);
             setCombos(comboRes.data.results || comboRes.data || []);
             setCategories(Array.isArray(catRes.data.results) ? catRes.data.results : (Array.isArray(catRes.data) ? catRes.data : []));
@@ -123,9 +138,10 @@ const ProductsPage = () => {
     // Fetch models when make changes
     useEffect(() => {
         const fetchModels = async () => {
-            if (formData.make) {
+            const makeId = formData.make || comboFormData.make;
+            if (makeId) {
                 try {
-                    const res = await api.get(`products/models/?make_id=${formData.make}`);
+                    const res = await api.get(`products/models/?make_id=${makeId}`);
                     setModels(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []));
                 } catch (err) {
                     console.error('Error fetching models:', err);
@@ -135,14 +151,15 @@ const ProductsPage = () => {
             }
         };
         fetchModels();
-    }, [formData.make]);
+    }, [formData.make, comboFormData.make]);
 
     // Fetch cities when state changes
     useEffect(() => {
         const fetchCities = async () => {
-            if (formData.state) {
+            const stateId = formData.state || comboFormData.state;
+            if (stateId) {
                 try {
-                    const res = await api.get(`locations/cities/?state_id=${formData.state}`);
+                    const res = await api.get(`locations/cities/?state_id=${stateId}`);
                     setCities(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []));
                 } catch (err) {
                     console.error('Error fetching cities:', err);
@@ -152,7 +169,7 @@ const ProductsPage = () => {
             }
         };
         fetchCities();
-    }, [formData.state]);
+    }, [formData.state, comboFormData.state]);
 
     const handleBuy = async (productId) => {
         setBuyingProduct(productId);
@@ -192,12 +209,11 @@ const ProductsPage = () => {
                 city: product.city || '',
                 exchange_available: product.exchange_available || false,
                 exchange_discount: product.exchange_discount || 0,
-                images: product.images ? product.images.map(img => ({ url: img.image })) : []
+                images: product.images ? product.images.map(img => ({ id: img.id, url: img.image, is_primary: img.is_primary })) : []
             });
             // Reset image/spec state for editing
-            setImageFiles([]);
-            const existingSpecs = product.specifications && product.specifications.length > 0 
-                ? product.specifications.map(s => ({ key: s.key, value: s.value })) 
+            const existingSpecs = product.specifications && product.specifications.length > 0
+                ? product.specifications.map(s => ({ key: s.key, value: s.value }))
                 : [{ key: '', value: '' }];
             setSpecRows(existingSpecs);
             setPrimaryImageIndex(product.images ? product.images.findIndex(img => img.is_primary) : null);
@@ -209,7 +225,6 @@ const ProductsPage = () => {
                 make: '', model: '', state: '', city: '',
                 exchange_available: false, exchange_discount: 0
             });
-            setImageFiles([]);
             setSpecRows([{ key: '', value: '' }]);
             setPrimaryImageIndex(null);
         }
@@ -258,24 +273,23 @@ const ProductsPage = () => {
             console.log('Product created/updated successfully with ID:', productId);
 
             // Step 2: Upload images (if any)
-            if (imageFiles.length > 0) {
+            const imagesToUpload = formData.images?.filter(img => img.file) || [];
+            if (imagesToUpload.length > 0) {
                 console.log('--- STEP 2: UPLOAD IMAGES ---');
-                for (let i = 0; i < imageFiles.length; i++) {
-                    const fd = new FormData();
-                    fd.append('product', productId);
-                    fd.append('image', imageFiles[i]);
-                    fd.append('is_primary', i === primaryImageIndex);
+                for (let i = 0; i < formData.images.length; i++) {
+                    const img = formData.images[i];
+                    if (img.file) {
+                        const fd = new FormData();
+                        fd.append('product', productId);
+                        fd.append('image', img.file);
+                        fd.append('is_primary', i === primaryImageIndex);
 
-                    console.log(`Image ${i + 1} API URL: products/product-images/`);
-                    console.log(`Image ${i + 1} File name:`, imageFiles[i].name);
-                    console.log(`Image ${i + 1} Form Data fields: { product: ${productId}, is_primary: ${i === primaryImageIndex} }`);
-                    console.log(`Image ${i + 1} Headers: Content-Type: multipart/form-data (Auto-set by Axios)`);
-
-                    await api.post('products/product-images/', fd, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    });
+                        await api.post('products/product-images/', fd, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        });
+                    }
                 }
                 console.log('Images uploaded successfully.');
             }
@@ -332,10 +346,18 @@ const ProductsPage = () => {
         try {
             const fd = new FormData();
             fd.append('name', comboFormData.name);
+            fd.append('slug', comboFormData.slug);
+            fd.append('sku', comboFormData.sku);
             fd.append('price', comboFormData.price);
             fd.append('inverter', comboFormData.inverter);
             fd.append('battery', comboFormData.battery);
             fd.append('is_active', comboFormData.is_active);
+            if (comboFormData.warranty) fd.append('warranty', comboFormData.warranty);
+            if (comboFormData.make) fd.append('make', comboFormData.make);
+            if (comboFormData.model) fd.append('model', comboFormData.model);
+            if (comboFormData.state) fd.append('state', comboFormData.state);
+            if (comboFormData.city) fd.append('city', comboFormData.city);
+            
             if (comboImageFile) {
                 fd.append('image', comboImageFile);
             }
@@ -343,10 +365,14 @@ const ProductsPage = () => {
             await api.post('products/combos/', fd, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            
+
             setIsComboModalOpen(false);
-            setComboFormData({ name: '', price: '', inverter: '', battery: '', is_active: true });
+            setComboFormData({ 
+                name: '', slug: '', sku: '', price: '', inverter: '', battery: '', 
+                is_active: true, warranty: '', make: '', model: '', state: '', city: '' 
+            });
             setComboImageFile(null);
+            setComboImagePreview(null);
             fetchData();
             alert('Combo created successfully!');
         } catch (err) {
@@ -370,41 +396,73 @@ const ProductsPage = () => {
     };
 
     // HANDLE IMAGE UPLOAD
-const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
+    const handleImageUpload = (e) => {
+        const files = Array.from(e.target.files);
 
-    setImageFiles(files);
+        const newImages = files.map(file => ({
+            url: URL.createObjectURL(file),
+            file: file,
+            is_primary: false
+        }));
 
-    const previews = files.map(file => ({
-        url: URL.createObjectURL(file)
-    }));
+        setFormData(prev => {
+            const updatedImages = [...(prev.images || []), ...newImages];
+            if (primaryImageIndex === null && updatedImages.length > 0) {
+                setPrimaryImageIndex(0);
+            }
+            return { ...prev, images: updatedImages };
+        });
+        
+        // Reset file input so same files can be selected again if removed
+        e.target.value = null;
+    };
 
-    setFormData(prev => ({
-        ...prev,
-        images: previews
-    }));
+    const removeImage = async (indexToRemove) => {
+        const imageToRemove = formData.images[indexToRemove];
+        
+        if (imageToRemove.id) {
+            if (window.confirm('Are you sure you want to delete this image?')) {
+                try {
+                    await api.delete(`products/product-images/${imageToRemove.id}/`);
+                    // We don't fetch data immediately to avoid resetting the form
+                } catch (err) {
+                    alert('Failed to delete image from server.');
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
 
-    if (files.length > 0) {
-        setPrimaryImageIndex(0);
-    }
-};
+        setFormData(prev => {
+            const newImages = [...prev.images];
+            newImages.splice(indexToRemove, 1);
+            return { ...prev, images: newImages };
+        });
 
-   //  SPEC HANDLERS
-const addSpec = () => {
-    setSpecRows([...specRows, { key: '', value: '' }]);
-};
+        if (primaryImageIndex === indexToRemove) {
+            setPrimaryImageIndex(null);
+        } else if (primaryImageIndex > indexToRemove) {
+            setPrimaryImageIndex(primaryImageIndex - 1);
+        }
+    };
 
-const removeSpec = (index) => {
-    const updated = [...specRows];
-    updated.splice(index, 1);
-    setSpecRows(updated);
-};
+    //  SPEC HANDLERS
+    const addSpec = () => {
+        setSpecRows([...specRows, { key: '', value: '' }]);
+    };
 
-const updateSpec = (index, field, value) => {
-    const updated = [...specRows];
-    updated[index][field] = value;
-    setSpecRows(updated);
-};
+    const removeSpec = (index) => {
+        const updated = [...specRows];
+        updated.splice(index, 1);
+        setSpecRows(updated);
+    };
+
+    const updateSpec = (index, field, value) => {
+        const updated = [...specRows];
+        updated[index][field] = value;
+        setSpecRows(updated);
+    };
 
     const getCategoryName = (id) => {
         if (!id) return 'Uncategorized';
@@ -434,26 +492,26 @@ const updateSpec = (index, field, value) => {
                             <button onClick={() => navigate('/brands')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Brands</button>
                             <button onClick={() => navigate('/vehicles')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Vehicles</button>
                             <button onClick={() => navigate('/locations')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Locations</button>
-                            <button 
+                            <button
                                 onClick={() => setIsComboModalOpen(true)}
-                                className="glass action-btn" 
-                                style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'white', border: 'none', background: 'var(--grad-blue, #3b82f6)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                                className="glass action-btn"
+                                style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'black', border: 'none', background: 'var(--grad-blue, #166fdc)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                             >
                                 <Plus size={16} style={{ marginRight: '4px' }} /> Create Combo
                             </button>
-                            <button 
+                            <button
                                 onClick={() => handleOpenModal()}
-                                className="glass" 
-                                style={{ 
-                                    padding: '0.75rem 1.5rem', 
-                                    borderRadius: '12px', 
-                                    background: 'var(--grad-purple)', 
-                                    border: 'none', 
-                                    color: 'white', 
-                                    fontWeight: 600, 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '8px', 
+                                className="glass"
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    borderRadius: '12px',
+                                    background: 'var(--grad-purple)',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
                                     cursor: 'pointer',
                                     boxShadow: '0 4px 15px rgba(218, 140, 255, 0.3)'
                                 }}>
@@ -466,12 +524,12 @@ const updateSpec = (index, field, value) => {
 
             {/* Tab Switcher */}
             <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
-                <button 
+                <button
                     onClick={() => setActiveTab('products')}
-                    style={{ 
-                        padding: '0.5rem 1rem', 
-                        background: 'none', 
-                        border: 'none', 
+                    style={{
+                        padding: '0.5rem 1rem',
+                        background: 'none',
+                        border: 'none',
                         borderBottom: activeTab === 'products' ? '3px solid var(--red-main)' : '3px solid transparent',
                         color: activeTab === 'products' ? 'var(--red-main)' : 'var(--text-dim)',
                         fontWeight: 700,
@@ -481,12 +539,12 @@ const updateSpec = (index, field, value) => {
                 >
                     Standard Products
                 </button>
-                <button 
+                <button
                     onClick={() => setActiveTab('combos')}
-                    style={{ 
-                        padding: '0.5rem 1rem', 
-                        background: 'none', 
-                        border: 'none', 
+                    style={{
+                        padding: '0.5rem 1rem',
+                        background: 'none',
+                        border: 'none',
                         borderBottom: activeTab === 'combos' ? '3px solid var(--red-main)' : '3px solid transparent',
                         color: activeTab === 'combos' ? 'var(--red-main)' : 'var(--text-dim)',
                         fontWeight: 700,
@@ -502,18 +560,18 @@ const updateSpec = (index, field, value) => {
             <div className="glass" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem', background: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid var(--glass-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ffffff', padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                     <Search size={18} color="var(--text-main)" />
-                    <input 
-                        type="text" 
-                        placeholder="Search by name or SKU..." 
+                    <input
+                        type="text"
+                        placeholder="Search by name or SKU..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontSize: '0.95rem', fontWeight: 500 }} 
+                        style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontSize: '0.95rem', fontWeight: 500 }}
                     />
                 </div>
-                
+
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                    <select 
-                        value={categoryFilter} 
+                    <select
+                        value={categoryFilter}
                         onChange={(e) => setCategoryFilter(e.target.value)}
                         style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem', outline: 'none', minWidth: '150px' }}
                     >
@@ -521,8 +579,8 @@ const updateSpec = (index, field, value) => {
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
 
-                    <select 
-                        value={brandFilter} 
+                    <select
+                        value={brandFilter}
                         onChange={(e) => setBrandFilter(e.target.value)}
                         style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem', outline: 'none', minWidth: '150px' }}
                     >
@@ -530,8 +588,8 @@ const updateSpec = (index, field, value) => {
                         {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
 
-                    <select 
-                        value={statusFilter} 
+                    <select
+                        value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
                         style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.85rem', outline: 'none', minWidth: '120px' }}
                     >
@@ -541,7 +599,7 @@ const updateSpec = (index, field, value) => {
                     </select>
 
                     {(searchTerm || categoryFilter || brandFilter || statusFilter !== 'all') && (
-                        <button 
+                        <button
                             onClick={() => { setSearchTerm(''); setCategoryFilter(''); setBrandFilter(''); setStatusFilter('all'); }}
                             style={{ padding: '8px 12px', background: 'none', border: 'none', color: '#ef4444', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}
                         >
@@ -558,6 +616,7 @@ const updateSpec = (index, field, value) => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
                                 <tr>
+                                    <th style={{ padding: '1.25rem' }}>Image</th>
                                     <th style={{ padding: '1.25rem' }}>Product</th>
                                     <th style={{ padding: '1.25rem' }}>SKU</th>
                                     <th style={{ padding: '1.25rem' }}>Category</th>
@@ -583,6 +642,17 @@ const updateSpec = (index, field, value) => {
                                 ) : filteredProducts.map((p) => (
                                     <tr key={p.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
                                         <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                                                {p.images && p.images.length > 0 ? (
+                                                    <img src={p.images.find(img => img.is_primary)?.image || p.images[0].image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                                                        <Box size={20} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem' }}>
                                             <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{p.name}</div>
                                             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>{getBrandName(p.brand)}</div>
                                         </td>
@@ -597,10 +667,10 @@ const updateSpec = (index, field, value) => {
                                             <div style={{ color: p.stock < 10 ? '#ef4444' : 'var(--text-main, #1f2937)', fontWeight: 500 }}>{p.stock} units</div>
                                         </td>
                                         <td style={{ padding: '1.25rem' }}>
-                                            <div style={{ 
-                                                padding: '4px 12px', 
-                                                borderRadius: '20px', 
-                                                fontSize: '0.7rem', 
+                                            <div style={{
+                                                padding: '4px 12px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.7rem',
                                                 background: p.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                                                 color: p.is_active ? '#22c55e' : '#ef4444',
                                                 display: 'inline-block'
@@ -611,15 +681,15 @@ const updateSpec = (index, field, value) => {
                                         <td style={{ padding: '1.25rem', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                                 {user?.role === 'CUSTOMER' && (
-                                                    <button 
-                                                        onClick={() => handleBuy(p.id)} 
+                                                    <button
+                                                        onClick={() => handleBuy(p.id)}
                                                         disabled={buyingProduct === p.id}
-                                                        className="action-btn buy" 
-                                                        style={{ 
-                                                            padding: '6px 12px', 
-                                                            borderRadius: '8px', 
-                                                            border: 'none', 
-                                                            cursor: buyingProduct === p.id ? 'not-allowed' : 'pointer', 
+                                                        className="action-btn buy"
+                                                        style={{
+                                                            padding: '6px 12px',
+                                                            borderRadius: '8px',
+                                                            border: 'none',
+                                                            cursor: buyingProduct === p.id ? 'not-allowed' : 'pointer',
                                                             background: 'var(--grad-purple)',
                                                             color: 'white',
                                                             display: 'flex',
@@ -629,7 +699,7 @@ const updateSpec = (index, field, value) => {
                                                             fontSize: '0.85rem'
                                                         }}
                                                     >
-                                                        {buyingProduct === p.id ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />} 
+                                                        {buyingProduct === p.id ? <Loader2 size={16} className="animate-spin" /> : <ShoppingCart size={16} />}
                                                         {buyingProduct === p.id ? 'Wait...' : 'Buy'}
                                                     </button>
                                                 )}
@@ -658,6 +728,7 @@ const updateSpec = (index, field, value) => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
                                 <tr>
+                                    <th style={{ padding: '1.25rem' }}>Image</th>
                                     <th style={{ padding: '1.25rem' }}>Combo Name</th>
                                     <th style={{ padding: '1.25rem' }}>Components</th>
                                     <th style={{ padding: '1.25rem' }}>Price</th>
@@ -675,21 +746,31 @@ const updateSpec = (index, field, value) => {
                                 ) : combos.map((c) => (
                                     <tr key={c.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
                                         <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                                                {c.image ? (
+                                                    <img src={c.image} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                                                        <Box size={20} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem' }}>
                                             <div style={{ fontWeight: 800, color: 'var(--text-main)' }}>{c.name}</div>
-                                            {c.image && <img src={c.image} alt={c.name} style={{ width: '40px', height: '40px', borderRadius: '4px', marginTop: '4px' }} />}
                                         </td>
                                         <td style={{ padding: '1.25rem' }}>
                                             <div style={{ fontSize: '0.85rem' }}>
-                                                <strong>Inverter:</strong> {c.inverter_name}<br/>
+                                                <strong>Inverter:</strong> {c.inverter_name}<br />
                                                 <strong>Battery:</strong> {c.battery_name}
                                             </div>
                                         </td>
                                         <td style={{ padding: '1.25rem', fontWeight: 800, color: 'var(--red-main)', fontSize: '1.1rem' }}>₹{c.price}</td>
                                         <td style={{ padding: '1.25rem' }}>
-                                            <div style={{ 
-                                                padding: '4px 12px', 
-                                                borderRadius: '20px', 
-                                                fontSize: '0.7rem', 
+                                            <div style={{
+                                                padding: '4px 12px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.7rem',
                                                 background: c.is_active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                                                 color: c.is_active ? '#22c55e' : '#ef4444',
                                                 display: 'inline-block'
@@ -714,13 +795,13 @@ const updateSpec = (index, field, value) => {
 
             {/* Modal for Add/Edit */}
             {isModalOpen && (
-                <div className="modal-overlay" style={{ 
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' 
+                <div className="modal-overlay" style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem'
                 }}>
-                    <form onSubmit={handleSubmit} className="glass" style={{ 
+                    <form onSubmit={handleSubmit} className="glass" style={{
                         width: '100%', maxWidth: '700px', display: 'flex', flexDirection: 'column',
-                        borderRadius: '24px', maxHeight: '90vh', overflow: 'hidden', position: 'relative' 
+                        borderRadius: '24px', maxHeight: '90vh', overflow: 'hidden', position: 'relative'
                     }}>
                         {/* Modal Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid var(--glass-border)', background: '#f8fafc' }}>
@@ -748,120 +829,138 @@ const updateSpec = (index, field, value) => {
                                 </div>
                                 <div className="input-group">
                                     <label>Price (₹)</label>
-                                    <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                                    <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
                                 </div>
                                 <div className="input-group">
                                     <label>Stock</label>
-                                    <input required type="number" value={formData.stock} onChange={e => setFormData({...formData, stock: e.target.value})} />
+                                    <input required type="number" value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} />
                                 </div>
                                 <div className="input-group">
                                     <label>Warranty</label>
-                                    <input value={formData.warranty} onChange={e => setFormData({...formData, warranty: e.target.value})} placeholder="e.g. 1 Year, 6 Months" />
+                                    <input value={formData.warranty} onChange={e => setFormData({ ...formData, warranty: e.target.value })} placeholder="e.g. 1 Year, 6 Months" />
                                 </div>
                                 <div className="input-group">
                                     <label>Category</label>
-                                    <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                                    <select required value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
                                         <option value="">Select Category</option>
                                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="input-group">
                                     <label>Brand</label>
-                                    <select required value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})}>
+                                    <select required value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })}>
                                         <option value="">Select Brand</option>
                                         {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="input-group">
                                     <label>Vehicle Make</label>
-                                    <select value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})}>
+                                    <select value={formData.make} onChange={e => setFormData({ ...formData, make: e.target.value })}>
                                         <option value="">Select Make</option>
                                         {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="input-group">
                                     <label>Vehicle Model</label>
-                                    <select value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})}>
+                                    <select value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })}>
                                         <option value="">Select Model</option>
                                         {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="input-group">
                                     <label>State</label>
-                                    <select value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})}>
+                                    <select value={formData.state} onChange={e => setFormData({ ...formData, state: e.target.value })}>
                                         <option value="">Select State</option>
                                         {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="input-group">
                                     <label>City</label>
-                                    <select value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})}>
+                                    <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
                                         <option value="">Select City</option>
                                         {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
                                 <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '25px' }}>
-                                    <input 
-                                        type="checkbox" 
-                                        id="exchange_available" 
-                                        checked={formData.exchange_available} 
-                                        onChange={e => setFormData({...formData, exchange_available: e.target.checked})} 
+                                    <input
+                                        type="checkbox"
+                                        id="exchange_available"
+                                        checked={formData.exchange_available}
+                                        onChange={e => setFormData({ ...formData, exchange_available: e.target.checked })}
                                     />
                                     <label htmlFor="exchange_available" style={{ margin: 0 }}>Exchange Available</label>
                                 </div>
                                 {formData.exchange_available && (
                                     <div className="input-group">
                                         <label>Exchange Discount (₹)</label>
-                                        <input 
-                                            type="number" 
-                                            value={formData.exchange_discount} 
-                                            onChange={e => setFormData({...formData, exchange_discount: e.target.value})} 
+                                        <input
+                                            type="number"
+                                            value={formData.exchange_discount}
+                                            onChange={e => setFormData({ ...formData, exchange_discount: e.target.value })}
                                             placeholder="Discount amount for old battery"
                                         />
                                     </div>
                                 )}
                                 <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '25px' }}>
-                                    <input 
-                                        type="checkbox" 
-                                        id="is_active" 
-                                        checked={formData.is_active} 
-                                        onChange={e => setFormData({...formData, is_active: e.target.checked})} 
+                                    <input
+                                        type="checkbox"
+                                        id="is_active"
+                                        checked={formData.is_active}
+                                        onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
                                     />
                                     <label htmlFor="is_active" style={{ margin: 0 }}>Product Active/Visible</label>
                                 </div>
                                 <div className="input-group" style={{ gridColumn: 'span 2' }}>
                                     <label>Description</label>
-                                    <textarea rows="3" required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                                    <textarea rows="3" required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
                                 </div>
                                 <div className="input-group" style={{ gridColumn: 'span 2' }}>
                                     <label>Images</label>
                                     <input type="file" multiple onChange={handleImageUpload} />
                                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
                                         {formData.images?.map((img, idx) => (
-                                            <div key={idx} style={{ position: 'relative' }}>
-                                                <img 
-                                                    src={img.url} 
-                                                    alt="preview" 
-                                                    style={{ 
-                                                        width: '80px', 
-                                                        height: '80px', 
-                                                        objectFit: 'cover', 
-                                                        borderRadius: '8px', 
-                                                        border: idx === primaryImageIndex ? '2px solid var(--red-main)' : 'none' 
-                                                    }} 
+                                            <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                                <img
+                                                    src={img.url}
+                                                    alt="preview"
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '8px',
+                                                        border: idx === primaryImageIndex ? '2px solid var(--red-main)' : 'none'
+                                                    }}
                                                 />
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => setPrimaryImageIndex(idx)} 
-                                                    style={{ 
-                                                        position: 'absolute', 
-                                                        bottom: 0, left: 0, right: 0, 
-                                                        fontSize: '0.6rem', 
-                                                        background: idx === primaryImageIndex ? 'var(--red-main)' : 'rgba(0,0,0,0.5)', 
-                                                        color: 'white', 
-                                                        border: 'none', 
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(idx)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-5px', right: '-5px',
+                                                        background: 'white',
+                                                        color: '#ef4444',
+                                                        border: '1px solid #ef4444',
+                                                        borderRadius: '50%',
+                                                        width: '20px', height: '20px',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        cursor: 'pointer', padding: 0, zIndex: 10
+                                                    }}>
+                                                    <X size={12} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPrimaryImageIndex(idx)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        bottom: 0, left: 0, right: 0,
+                                                        fontSize: '0.6rem',
+                                                        background: idx === primaryImageIndex ? 'var(--red-main)' : 'rgba(0,0,0,0.7)',
+                                                        color: 'white',
+                                                        border: 'none',
                                                         cursor: 'pointer',
-                                                        padding: '2px 0'
+                                                        padding: '4px 0',
+                                                        borderBottomLeftRadius: '8px',
+                                                        borderBottomRightRadius: '8px'
                                                     }}>
                                                     {idx === primaryImageIndex ? 'Primary' : 'Set Primary'}
                                                 </button>
@@ -877,21 +976,21 @@ const updateSpec = (index, field, value) => {
                                     </div>
                                     {specRows.map((spec, idx) => (
                                         <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
-                                            <input 
-                                                placeholder="Key (e.g. Dimensions)" 
-                                                value={spec.key} 
-                                                onChange={e => updateSpec(idx, 'key', e.target.value)} 
-                                                style={{ flex: 1 }} 
+                                            <input
+                                                placeholder="Key (e.g. Dimensions)"
+                                                value={spec.key}
+                                                onChange={e => updateSpec(idx, 'key', e.target.value)}
+                                                style={{ flex: 1 }}
                                             />
-                                            <input 
-                                                placeholder="Value (e.g. 10x20x30 cm)" 
-                                                value={spec.value} 
-                                                onChange={e => updateSpec(idx, 'value', e.target.value)} 
-                                                style={{ flex: 2 }} 
+                                            <input
+                                                placeholder="Value (e.g. 10x20x30 cm)"
+                                                value={spec.value}
+                                                onChange={e => updateSpec(idx, 'value', e.target.value)}
+                                                style={{ flex: 2 }}
                                             />
-                                            <button 
-                                                type="button" 
-                                                onClick={() => removeSpec(idx)} 
+                                            <button
+                                                type="button"
+                                                onClick={() => removeSpec(idx)}
                                                 style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                                             >
                                                 <Trash2 size={16} />
@@ -905,7 +1004,7 @@ const updateSpec = (index, field, value) => {
                         {/* Modal Footer - Fixed */}
                         <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: '1rem', justifyContent: 'flex-end', background: '#fff' }}>
                             <button type="button" onClick={() => setIsModalOpen(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', background: 'transparent', border: '1px solid #ced4da', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                            <button type="submit" style={{ 
+                            <button type="submit" style={{
                                 padding: '0.75rem 2rem', borderRadius: '12px', background: 'var(--red-main)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
                                 boxShadow: '0 4px 15px rgba(211, 47, 47, 0.3)'
                             }}>
@@ -917,13 +1016,13 @@ const updateSpec = (index, field, value) => {
             )}
             {/* Combo Modal */}
             {isComboModalOpen && (
-                <div className="modal-overlay" style={{ 
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' 
+                <div className="modal-overlay" style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem'
                 }}>
-                    <form onSubmit={handleComboSubmit} className="glass" style={{ 
+                    <form onSubmit={handleComboSubmit} className="glass" style={{
                         width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column',
-                        borderRadius: '24px', maxHeight: '90vh', overflow: 'hidden', position: 'relative' 
+                        borderRadius: '24px', maxHeight: '90vh', overflow: 'hidden', position: 'relative'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid var(--glass-border)', background: '#f8fafc' }}>
                             <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#000' }}>Create Combo Pack</h2>
@@ -934,38 +1033,138 @@ const updateSpec = (index, field, value) => {
 
                         <div style={{ padding: '2rem', overflowY: 'auto', flex: 1 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div className="input-group">
-                                    <label>Combo Name</label>
-                                    <input required value={comboFormData.name} onChange={e => setComboFormData({...comboFormData, name: e.target.value})} placeholder="e.g. Inverter + 150Ah Battery" />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>Combo Name</label>
+                                        <input required value={comboFormData.name} onChange={e => setComboFormData({ ...comboFormData, name: e.target.value, slug: slugify(e.target.value) })} placeholder="e.g. Inverter + 150Ah Battery" />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Slug (URL key)</label>
+                                        <input required value={comboFormData.slug} onChange={e => setComboFormData({ ...comboFormData, slug: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>SKU</label>
+                                        <input required value={comboFormData.sku} onChange={e => setComboFormData({ ...comboFormData, sku: e.target.value })} placeholder="COMBO-001" />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Combo Price (₹)</label>
+                                        <input required type="number" step="0.01" value={comboFormData.price} onChange={e => setComboFormData({ ...comboFormData, price: e.target.value })} />
+                                    </div>
                                 </div>
                                 <div className="input-group">
-                                    <label>Combo Price (₹)</label>
-                                    <input required type="number" step="0.01" value={comboFormData.price} onChange={e => setComboFormData({...comboFormData, price: e.target.value})} />
+                                    <label>Warranty</label>
+                                    <input value={comboFormData.warranty} onChange={e => setComboFormData({ ...comboFormData, warranty: e.target.value })} placeholder="e.g. 24 Months" />
                                 </div>
-                                <div className="input-group">
-                                    <label>Select Inverter</label>
-                                    <select required value={comboFormData.inverter} onChange={e => setComboFormData({...comboFormData, inverter: e.target.value})}>
-                                        <option value="">Select a Product</option>
-                                        {products.map(p => <option key={p.id} value={p.id}>{p.name} (₹{p.price})</option>)}
-                                    </select>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                    <div className="input-group">
+                                        <label>Select Inverter</label>
+                                        <select required value={comboFormData.inverter} onChange={e => setComboFormData({ ...comboFormData, inverter: e.target.value })}>
+                                            <option value="">Select a Product</option>
+                                            {products.filter(p => getCategoryName(p.category).toLowerCase().includes('inverter')).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            {/* Fallback to all if no inverter category found */}
+                                            {products.filter(p => !getCategoryName(p.category).toLowerCase().includes('inverter')).length > 0 && products.filter(p => getCategoryName(p.category).toLowerCase().includes('inverter')).length === 0 && products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Select Battery</label>
+                                        <select required value={comboFormData.battery} onChange={e => setComboFormData({ ...comboFormData, battery: e.target.value })}>
+                                            <option value="">Select a Product</option>
+                                            {products.filter(p => getCategoryName(p.category).toLowerCase().includes('battery')).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            {/* Fallback to all if no battery category found */}
+                                            {products.filter(p => !getCategoryName(p.category).toLowerCase().includes('battery')).length > 0 && products.filter(p => getCategoryName(p.category).toLowerCase().includes('battery')).length === 0 && products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className="input-group">
-                                    <label>Select Battery</label>
-                                    <select required value={comboFormData.battery} onChange={e => setComboFormData({...comboFormData, battery: e.target.value})}>
-                                        <option value="">Select a Product</option>
-                                        {products.map(p => <option key={p.id} value={p.id}>{p.name} (₹{p.price})</option>)}
-                                    </select>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>Vehicle Make</label>
+                                        <select value={comboFormData.make} onChange={e => setComboFormData({ ...comboFormData, make: e.target.value })}>
+                                            <option value="">Select Make</option>
+                                            {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Vehicle Model</label>
+                                        <select value={comboFormData.model} onChange={e => setComboFormData({ ...comboFormData, model: e.target.value })}>
+                                            <option value="">Select Model</option>
+                                            {(makes.find(m => m.id == comboFormData.make)?.models || models).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>State</label>
+                                        <select value={comboFormData.state} onChange={e => setComboFormData({ ...comboFormData, state: e.target.value })}>
+                                            <option value="">Select State</option>
+                                            {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label>City</label>
+                                        <select value={comboFormData.city} onChange={e => setComboFormData({ ...comboFormData, city: e.target.value })}>
+                                            <option value="">Select City</option>
+                                            {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                {comboFormData.inverter && comboFormData.battery && (
+                                    <div style={{ padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                                        <div style={{ fontSize: '0.85rem', color: '#1d4ed8', fontWeight: 700 }}>Virtual Combo Stock Available: </div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#1e40af' }}>
+                                            {Math.min(
+                                                products.find(p => p.id == comboFormData.inverter)?.stock || 0,
+                                                products.find(p => p.id == comboFormData.battery)?.stock || 0
+                                            )} units
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexDirection: 'row' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="combo_is_active" 
+                                        checked={comboFormData.is_active} 
+                                        onChange={e => setComboFormData({ ...comboFormData, is_active: e.target.checked })} 
+                                    />
+                                    <label htmlFor="combo_is_active" style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Combo Active/Visible</label>
+                                </div>
+
                                 <div className="input-group">
                                     <label>Combo Image</label>
-                                    <input type="file" onChange={e => setComboImageFile(e.target.files[0])} />
+                                    <input type="file" onChange={handleComboImageUpload} />
+                                    {comboImagePreview && (
+                                        <div style={{ position: 'relative', width: '100px', height: '100px', marginTop: '10px' }}>
+                                            <img
+                                                src={comboImagePreview}
+                                                alt="Combo preview"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={removeComboImage}
+                                                style={{
+                                                    position: 'absolute', top: '-5px', right: '-5px',
+                                                    background: 'white', color: '#ef4444', border: '1px solid #ef4444',
+                                                    borderRadius: '50%', width: '20px', height: '20px',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    cursor: 'pointer', padding: 0
+                                                }}>
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
                         <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: '1rem', justifyContent: 'flex-end', background: '#fff' }}>
                             <button type="button" onClick={() => setIsComboModalOpen(false)} style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', background: 'transparent', border: '1px solid #ced4da', color: 'var(--text-main)', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                            <button type="submit" disabled={comboSubmitting} style={{ 
+                            <button type="submit" disabled={comboSubmitting} style={{
                                 padding: '0.75rem 2rem', borderRadius: '12px', background: 'var(--grad-blue, #3b82f6)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
                             }}>
                                 {comboSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Create Combo

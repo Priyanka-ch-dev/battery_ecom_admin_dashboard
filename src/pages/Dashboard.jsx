@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area
@@ -79,6 +79,7 @@ const SearchBadge = ({ label, values, icon: Icon, loading }) => (
 );
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [orders, setOrders] = useState([]);
   const [sellers, setSellers] = useState([]);
@@ -213,9 +214,9 @@ const DashboardPage = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1.5fr 1.5fr 1.2fr 1fr 40px', padding: '12px 0', borderBottom: '2px solid #f8fafc', color: 'var(--text-dim)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1.5fr 1.5fr 1.2fr 1.5fr 40px', padding: '12px 0', borderBottom: '2px solid #f8fafc', color: 'var(--text-dim)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             <span>Order ID</span>
-            <span>Customer Email</span>
+            <span>Customer Name</span>
             <span>Amount</span>
             <span>Assigned To</span>
             <span>Assign Seller</span>
@@ -229,19 +230,21 @@ const DashboardPage = () => {
           ) : orders.length === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-dim)' }}>No recent orders found.</div>
           ) : orders.map(order => (
-            <div key={order.id} className="modern-table-row" style={{
-              display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1.5fr 1.5fr 1.2fr 1fr 40px',
+            <div key={order.id} 
+              onClick={() => navigate(`/orders/${order.id}`)}
+              className="modern-table-row" style={{
+              display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1.5fr 1.5fr 1.2fr 1.5fr 40px',
               padding: '16px 12px', borderRadius: '12px', alignItems: 'center', fontSize: '0.9rem',
               transition: 'background 0.2s ease',
               borderBottom: '1px solid #f1f5f9'
             }}>
               <span style={{ fontWeight: 800, color: '#000' }}>#{order.id}</span>
-              <span style={{ color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '10px', fontWeight: 600 }}>{order.user_email}</span>
+              <span style={{ color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '10px', fontWeight: 600 }}>{order.customer_name || order.user_email}</span>
               <span style={{ fontWeight: 800, color: '#d32f2f' }}>₹{parseFloat(order.grand_total).toLocaleString()}</span>
               <span style={{ fontSize: '0.85rem', color: '#000', fontWeight: 700 }}>{order.delivery_person_name || 'Unassigned'}</span>
 
               {/* Quick Assign Dropdown */}
-              <div style={{ paddingRight: '10px' }}>
+              <div style={{ paddingRight: '10px' }} onClick={(e) => e.stopPropagation()}>
                 <select
                   value={order.delivery_person || ''}
                   onChange={(e) => handleAssignSeller(order.id, e.target.value)}
@@ -259,7 +262,7 @@ const DashboardPage = () => {
                   }}
                 >
                   <option value="">Choose Seller...</option>
-                  {sellers.map(s => <option key={s.id} value={s.user}>{s.business_name}</option>)}
+                  {sellers.map(s => <option key={s.id} value={s.user}>{s.seller_name}</option>)}
                 </select>
               </div>
 
@@ -278,8 +281,8 @@ const DashboardPage = () => {
                   {order.status}
                 </span>
               </div>
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', fontWeight: 600 }}>{new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
-              <Link to="/orders" style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem', fontWeight: 600 }}>{new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+              <Link to={`/orders/${order.id}`} style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <ChevronRight size={20} />
               </Link>
             </div>

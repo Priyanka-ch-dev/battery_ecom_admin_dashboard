@@ -7,6 +7,7 @@ import ProtectedRoute from './ProtectedRoute';
 import LoginPage from './pages/Login';
 import DashboardPage from './pages/Dashboard';
 import OrdersPage from './pages/Orders';
+import OrderDetailPage from './pages/OrderDetail';
 import ProductsPage from './pages/Products';
 import CustomersPage from './pages/Customers';
 import PaymentsPage from './pages/Payments';
@@ -14,6 +15,7 @@ import WithdrawalsPage from './pages/Withdrawals';
 import ReviewsPage from './pages/Reviews';
 import InstallationRequestsPage from './pages/InstallationRequests';
 import SellersPage from './pages/Sellers';
+import SellerProfilePage from './pages/SellerProfile';
 import CategoriesPage from './pages/Categories';
 import BrandsPage from './pages/Brands';
 import CouponsPage from './pages/Coupons';
@@ -113,6 +115,7 @@ const Sidebar = ({ isCollapsed, isMobile, toggleSidebar }) => {
 };
 
 const Header = ({ toggleSidebar, isCollapsed }) => {
+  const { logout } = useAuth();
   return (
     <header style={{
       background: 'var(--sidebar-bg)',
@@ -135,7 +138,7 @@ const Header = ({ toggleSidebar, isCollapsed }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
           <img src="https://ui-avatars.com/api/?name=Admin&background=ff0000&color=fff" alt="Avatar" style={{ width: '28px', height: '28px', borderRadius: '50%' }} />
         </div>
-        <button onClick={() => { localStorage.removeItem('token'); window.location.reload(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ff4b5c' }}>
+        <button onClick={() => { logout(); window.location.href = '/login'; }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ff4b5c' }}>
           <LogOut size={18} />
         </button>
       </div>
@@ -182,9 +185,11 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Layout><DashboardPage /></Layout>} />
             <Route path="/orders" element={<Layout><OrdersPage /></Layout>} />
+            <Route path="/orders/:id" element={<Layout><OrderDetailPage /></Layout>} />
             <Route path="/products" element={<Layout><ProductsPage /></Layout>} />
             <Route path="/customers" element={<Layout><CustomersPage /></Layout>} />
             <Route path="/sellers" element={<Layout><SellersPage /></Layout>} />
+            <Route path="/sellers/:id" element={<Layout><SellerProfilePage /></Layout>} />
             <Route path="/categories" element={<Layout><CategoriesPage /></Layout>} />
             <Route path="/brands" element={<Layout><BrandsPage /></Layout>} />
             <Route path="/coupons" element={<Layout><CouponsPage /></Layout>} />

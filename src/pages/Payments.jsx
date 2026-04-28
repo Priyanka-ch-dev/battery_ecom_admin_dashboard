@@ -136,16 +136,18 @@ const PaymentsPage = () => {
                                 <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Customer</th>
                                 <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Delivery Person</th>
                                 <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Amount</th>
+                                <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Method</th>
+                                <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Transaction Details</th>
                                 <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Customer Status</th>
                                 <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Delivery Status</th>
-                                <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Customer Actions</th>
+                                <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Actions</th>
                                 <th style={{ padding: '1rem 1.5rem', fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', textAlign: 'right' }}>Seller/Delivery Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="8" style={{ padding: '6rem', textAlign: 'center' }}>
+                                    <td colSpan="9" style={{ padding: '6rem', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                                             <Loader2 className="animate-spin" size={40} color="var(--red-main)" />
                                             <span style={{ fontWeight: 600, color: '#64748b' }}>Refreshing ledger...</span>
@@ -154,7 +156,7 @@ const PaymentsPage = () => {
                                 </tr>
                             ) : transactions.length === 0 ? (
                                 <tr>
-                                    <td colSpan="8" style={{ padding: '6rem', textAlign: 'center' }}>
+                                    <td colSpan="9" style={{ padding: '6rem', textAlign: 'center' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#94a3b8' }}>
                                             <AlertCircle size={48} strokeWidth={1} />
                                             <span style={{ fontWeight: 600 }}>No records found</span>
@@ -185,6 +187,7 @@ const PaymentsPage = () => {
                                         >
                                             {tx?.customer_email || 'Anonymous'}
                                         </div>
+                                        <div style={{ fontSize: '0.7rem', color: '#64748b' }}>ID: {tx?.customer_id}</div>
                                     </td>
                                     <td style={{ padding: '1.25rem 1.5rem' }}>
                                         <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
@@ -194,34 +197,46 @@ const PaymentsPage = () => {
                                     </td>
                                     <td style={{ padding: '1.25rem 1.5rem' }}>
                                         <div style={{ fontWeight: 900, color: '#000' }}>₹{tx?.amount || 0}</div>
-                                        {tx?.seller_settlement_status === 'SETTLED' && (
-                                            <div style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px', marginTop: '2px' }}>
-                                                
-                                            </div>
-                                        )}
+                                    </td>
+                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                        <div style={{ 
+                                            fontSize: '0.75rem', fontWeight: 700, color: tx?.method === 'COD' ? '#D97706' : '#2563EB',
+                                            display: 'flex', alignItems: 'center', gap: '4px'
+                                        }}>
+                                            {tx?.method === 'COD' ? <Smartphone size={14} /> : <CreditCard size={14} />}
+                                            {tx?.payment_method_display || tx?.method}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1.25rem 1.5rem' }}>
+                                        <div style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: 1.5 }}>
+                                            {tx?.razorpay_order_id && <div><span style={{ fontWeight: 700 }}>Order:</span> {tx.razorpay_order_id}</div>}
+                                            {tx?.razorpay_payment_id && <div><span style={{ fontWeight: 700 }}>Payment:</span> {tx.razorpay_payment_id}</div>}
+                                            {tx?.transaction_id && <div><span style={{ fontWeight: 700 }}>Txn ID:</span> {tx.transaction_id}</div>}
+                                            {!tx?.razorpay_order_id && !tx?.transaction_id && <span>-</span>}
+                                        </div>
                                     </td>
                                     <td style={{ padding: '1.25rem 1.5rem' }}>
                                         <div style={{ 
                                             display: 'inline-flex', alignItems: 'center', gap: '6px', 
                                             padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', 
-                                            background: `${getStatusColor(tx?.customer_payment_status, 'customer')}15`, 
-                                            color: getStatusColor(tx?.customer_payment_status, 'customer'),
-                                            fontWeight: 800, border: `1px solid ${getStatusColor(tx?.customer_payment_status, 'customer')}30`
+                                            background: tx?.customer_payment_status === 'SUCCESS' || tx?.customer_payment_status === 'PAID' ? '#dcfce7' : 
+                                                        tx?.customer_payment_status === 'FAILED' ? '#fee2e2' : '#fef3c7', 
+                                            color: tx?.customer_payment_status === 'SUCCESS' || tx?.customer_payment_status === 'PAID' ? '#166534' : 
+                                                   tx?.customer_payment_status === 'FAILED' ? '#991b1b' : '#92400e',
+                                            fontWeight: 800, border: '1px solid currentColor'
                                         }}>
                                             {tx?.customer_payment_status || 'PENDING'}
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem 1.5rem' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                                            <div style={{ 
-                                                display: 'inline-flex', alignItems: 'center', gap: '6px', 
-                                                padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', 
-                                                background: `${getStatusColor(tx?.delivery_payment_status, 'delivery')}15`, 
-                                                color: getStatusColor(tx?.delivery_payment_status, 'delivery'),
-                                                fontWeight: 800, border: `1px solid ${getStatusColor(tx?.delivery_payment_status, 'delivery')}30`
-                                            }}>
-                                                {tx?.delivery_payment_status || 'PENDING'}
-                                            </div>
+                                        <div style={{ 
+                                            display: 'inline-flex', alignItems: 'center', gap: '6px', 
+                                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.7rem', 
+                                            background: tx?.delivery_payment_status === 'VERIFIED' ? '#dcfce7' : '#f1f5f9', 
+                                            color: tx?.delivery_payment_status === 'VERIFIED' ? '#166534' : '#475569',
+                                            fontWeight: 800, border: '1px solid currentColor'
+                                        }}>
+                                            {tx?.delivery_payment_status || 'PENDING'}
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem 1.5rem' }}>
@@ -235,20 +250,20 @@ const PaymentsPage = () => {
                                                     {processingId === `${tx?.order}-customer` ? '...' : 'Mark Collected'}
                                                 </button>
                                             )}
-                                            {tx?.customer_payment_status === 'COLLECTED' && (
+                                            {(tx?.customer_payment_status === 'COLLECTED' || tx?.customer_payment_status === 'PENDING') && tx?.method === 'COD' && (
                                                 <button 
-                                                    onClick={() => updateStatus(tx?.order, 'customer', 'PAID')}
+                                                    onClick={() => updateStatus(tx?.order, 'customer', 'SUCCESS')}
                                                     disabled={processingId === `${tx?.order}-customer`}
                                                     style={{ background: '#22c55e', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', minWidth: '110px' }}
                                                 >
-                                                    {processingId === `${tx?.order}-customer` ? '...' : 'Mark Paid'}
+                                                    {processingId === `${tx?.order}-customer` ? '...' : 'Mark Success'}
                                                 </button>
                                             )}
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
-                                            {tx?.delivery_payment_status === 'PENDING' && (
+                                            {tx?.delivery_payment_status === 'PENDING' && tx?.method === 'COD' && (
                                                 <button 
                                                     onClick={() => updateStatus(tx?.order, 'delivery', 'SUBMITTED')}
                                                     disabled={processingId === `${tx?.order}-delivery`}
