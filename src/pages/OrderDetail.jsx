@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ChevronLeft, Package, User, MapPin, CreditCard, 
-    Truck, Clock, AlertCircle, Loader2, IndianRupee 
+    Truck, Clock, AlertCircle, Loader2, IndianRupee, Shield 
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -99,9 +99,7 @@ const OrderDetailPage = () => {
                                     </div>
                                     <div style={{ flex: 1 }}>
                                         <h4 style={{ fontWeight: 800, fontSize: '1rem', color: '#000' }}>{item.product_name}</h4>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', marginTop: '4px' }}>
-                                            Seller: <span style={{ fontWeight: 700, color: '#000' }}>{item.seller_name}</span>
-                                        </div>
+                                        
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '1rem' }}>
                                             <div style={{ fontSize: '0.9rem' }}>
                                                 <span style={{ fontWeight: 800, color: '#000' }}>₹{parseFloat(item.price).toLocaleString()}</span>
@@ -147,9 +145,50 @@ const OrderDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Right Column: Customer & Shipping */}
+                    {/* {order.seller_earnings && order.seller_earnings.length > 0 && (
+                        <div className="glass" style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', border: '1px solid var(--glass-border)', marginTop: '2rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Shield size={20} color="var(--purple-main)" /> Seller Earnings Breakdown
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {order.seller_earnings.map((earning, idx) => (
+                                    <div key={idx} style={{ padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
+                                        <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '8px' }}>{earning.seller_name}</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                                            <div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>GROSS</div>
+                                                <div style={{ fontWeight: 800 }}>₹{parseFloat(earning.gross).toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>COMMISSION</div>
+                                                <div style={{ fontWeight: 800, color: '#e11d48' }}>- ₹{parseFloat(earning.commission).toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>DELIVERY</div>
+                                                <div style={{ fontWeight: 800, color: '#059669' }}>+ ₹{parseFloat(earning.delivery).toLocaleString()}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>NET PAYOUT</div>
+                                                <div style={{ fontWeight: 800, color: 'var(--purple-main)' }}>₹{parseFloat(earning.net).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>Settlement Status:</span>
+                                            <span style={{ 
+                                                fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '20px',
+                                                background: earning.settlement_status === 'SETTLED' ? '#ecfdf5' : '#fffbeb',
+                                                color: earning.settlement_status === 'SETTLED' ? '#059669' : '#d97706'
+                                            }}>
+                                                {earning.settlement_status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )} */}
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <div className="glass" style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', border: '1px solid var(--glass-border)' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>

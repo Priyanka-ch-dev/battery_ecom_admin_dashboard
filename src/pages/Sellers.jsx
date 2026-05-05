@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Store, CheckCircle, XCircle, Mail, Shield, 
-  Loader2, UserCheck, UserX, Search, Eye, 
-  FileText, CreditCard, Building2, User 
+import {
+    Store, CheckCircle, XCircle, Mail, Shield,
+    Loader2, UserCheck, UserX, Search, Eye,
+    FileText, CreditCard, Building2, User
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -15,6 +15,8 @@ const SellersPage = () => {
     const [statusFilter, setStatusFilter] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
+    const [showCommissionModal, setShowCommissionModal] = useState(false);
+    const [editCommission, setEditCommission] = useState('');
     const [selectedSeller, setSelectedSeller] = useState(null);
     const [formData, setFormData] = useState({
         username: '',
@@ -90,6 +92,19 @@ const SellersPage = () => {
         }
     };
 
+    const handleUpdateCommission = async () => {
+        if (!selectedSeller || !editCommission) return;
+        try {
+            await api.patch(`sellers/${selectedSeller.id}/`, { commission: editCommission });
+            setShowCommissionModal(false);
+            setSellers(sellers.map(s => s.id === selectedSeller.id ? { ...s, commission: editCommission } : s));
+            alert('Commission rate updated successfully.');
+        } catch (err) {
+            console.error('Failed to update commission:', err);
+            alert('Error updating commission rate.');
+        }
+    };
+
     return (
         <div>
             <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -97,21 +112,21 @@ const SellersPage = () => {
                     <h1 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Seller Moderation</h1>
                     <p style={{ color: 'var(--text-dim)' }}>Approve or verify multi-vendor partnership applications.</p>
                 </div>
-                <button 
-                  onClick={() => setShowModal(true)}
-                  style={{ 
-                    background: 'var(--purple-main)', 
-                    color: 'white', 
-                    border: 'none', 
-                    padding: '12px 24px', 
-                    borderRadius: '12px', 
-                    fontWeight: 600, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(111, 66, 193, 0.3)'
-                  }}>
+                <button
+                    onClick={() => setShowModal(true)}
+                    style={{
+                        background: 'var(--purple-main)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(111, 66, 193, 0.3)'
+                    }}>
                     <Store size={20} /> Add Seller
                 </button>
             </div>
@@ -120,19 +135,19 @@ const SellersPage = () => {
             <div className="glass" style={{ padding: '1rem', borderRadius: '16px', marginBottom: '1.5rem', background: 'var(--card-bg)', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center', gap: '10px', background: '#f1f5f9', padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                     <Search size={18} color="var(--text-main)" />
-                    <input 
-                      type="text" 
-                      placeholder="Search by business name or email..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '0.9rem' }}
+                    <input
+                        type="text"
+                        placeholder="Search by business name or email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '0.9rem' }}
                     />
                 </div>
-                
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: '#f1f5f9', fontSize: '0.9rem', color: 'var(--text-main)', outline: 'none', minWidth: '180px', fontWeight: 600 }}
+
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    style={{ padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: '#f1f5f9', fontSize: '0.9rem', color: 'var(--text-main)', outline: 'none', minWidth: '180px', fontWeight: 600 }}
                 >
                     <option value="">All Statuses</option>
                     <option value="PENDING">Pending</option>
@@ -141,9 +156,9 @@ const SellersPage = () => {
                 </select>
 
                 {(searchTerm || statusFilter) && (
-                    <button 
-                      onClick={() => { setSearchTerm(''); setStatusFilter(''); }}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                    <button
+                        onClick={() => { setSearchTerm(''); setStatusFilter(''); }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                     >
                         Clear Filters
                     </button>
@@ -178,7 +193,7 @@ const SellersPage = () => {
                             ) : sellers.map((seller) => (
                                 <tr key={seller.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row">
                                     <td style={{ padding: '1.25rem' }}>
-                                        <div 
+                                        <div
                                             onClick={() => window.location.href = `/sellers/${seller.id}`}
                                             style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
                                             className="hover-translate"
@@ -186,7 +201,7 @@ const SellersPage = () => {
                                             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255, 0, 0, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Store size={20} color="var(--primary-glow)" />
                                             </div>
-                                             <div>
+                                            <div>
                                                 <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)' }}>{seller.business_name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600, marginTop: '2px' }}>
                                                     {seller.name || 'Individual Seller'}
@@ -201,7 +216,16 @@ const SellersPage = () => {
                                         {seller.gst || 'Not Provided'}
                                     </td>
                                     <td style={{ padding: '1.25rem', fontWeight: 600 }}>
-                                        {seller.commission}%
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            {seller.commission}%
+                                            <button 
+                                                onClick={() => { setSelectedSeller(seller); setEditCommission(seller.commission); setShowCommissionModal(true); }}
+                                                style={{ padding: '4px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}
+                                                title="Edit Commission"
+                                            >
+                                                <Shield size={14} color="var(--purple-main)" />
+                                            </button>
+                                        </div>
                                     </td>
                                     <td style={{ padding: '1.25rem' }}>
                                         {((seller.status || '').toUpperCase() === "PENDING" || !seller.status) && (
@@ -214,27 +238,27 @@ const SellersPage = () => {
                                             <span className="status rejected">Rejected</span>
                                         )}
                                     </td>
-                                     <td className="actions" style={{ padding: '1.4rem', textAlign: 'right' }}>
-                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                             <button 
-                                               onClick={() => { setSelectedSeller(seller); setShowVerifyModal(true); }}
-                                               style={{ padding: '6px 12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, fontSize: '0.75rem' }}>
-                                                 <Eye size={14} /> Verify
-                                             </button>
-                                             <button 
-                                               className="approve-btn"
-                                               style={{ fontSize: '0.75rem' }}
-                                               onClick={() => handleStatusUpdate(seller.id, 'APPROVED')}>
-                                                 Approve
-                                             </button>
-                                             <button 
-                                               className="reject-btn"
-                                               style={{ fontSize: '0.75rem' }}
-                                               onClick={() => handleStatusUpdate(seller.id, 'REJECTED')}>
-                                                 Reject
-                                             </button>
-                                         </div>
-                                     </td>
+                                    <td className="actions" style={{ padding: '1.4rem', textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                            <button
+                                                onClick={() => { setSelectedSeller(seller); setShowVerifyModal(true); }}
+                                                style={{ padding: '6px 12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, fontSize: '0.75rem' }}>
+                                                <Eye size={14} /> Verify
+                                            </button>
+                                            <button
+                                                className="approve-btn"
+                                                style={{ fontSize: '0.75rem' }}
+                                                onClick={() => handleStatusUpdate(seller.id, 'APPROVED')}>
+                                                Approve
+                                            </button>
+                                            <button
+                                                className="reject-btn"
+                                                style={{ fontSize: '0.75rem' }}
+                                                onClick={() => handleStatusUpdate(seller.id, 'REJECTED')}>
+                                                Reject
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -280,9 +304,9 @@ const SellersPage = () => {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Quick Seller Registration</h2>
-                            <button 
-                              onClick={() => setShowModal(false)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)' }}>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-main)' }}>
                                 <XCircle size={24} />
                             </button>
                         </div>
@@ -290,119 +314,119 @@ const SellersPage = () => {
                         <form onSubmit={handleCreateSeller} style={{ display: 'grid', gap: '1rem', gridTemplateColumns: '1fr 1fr' }}>
                             <div style={{ gridColumn: 'span 2' }}>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Business Name</label>
-                                <input 
-                                  required
-                                  className="form-input"
-                                  value={formData.business_name}
-                                  onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-                                  placeholder="e.g. Acme Battery Solutions"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                <input
+                                    required
+                                    className="form-input"
+                                    value={formData.business_name}
+                                    onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                                    placeholder="e.g. Acme Battery Solutions"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
-                            
+
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Username (for Login)</label>
-                                <input 
-                                  required
-                                  className="form-input"
-                                  value={formData.username}
-                                  onChange={(e) => setFormData({...formData, username: e.target.value})}
-                                  placeholder="johndoe"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                <input
+                                    required
+                                    className="form-input"
+                                    value={formData.username}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                    placeholder="johndoe"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
 
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Email Address</label>
-                                <input 
-                                  required
-                                  type="email"
-                                  className="form-input"
-                                  value={formData.email}
-                                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                  placeholder="john@example.com"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                <input
+                                    required
+                                    type="email"
+                                    className="form-input"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    placeholder="john@example.com"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
 
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Temp Password</label>
-                                <input 
-                                  required
-                                  type="password"
-                                  className="form-input"
-                                  value={formData.password}
-                                  onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                  placeholder="••••••••"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                <input
+                                    required
+                                    type="password"
+                                    className="form-input"
+                                    value={formData.password}
+                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    placeholder="••••••••"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
 
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Phone Number</label>
-                                <input 
-                                  className="form-input"
-                                  value={formData.phone_number}
-                                  onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                                  placeholder="+91 0000000000"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                <input
+                                    className="form-input"
+                                    value={formData.phone_number}
+                                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                                    placeholder="+91 0000000000"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
 
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>GST Number</label>
-                                <input 
-                                  className="form-input"
-                                  value={formData.gst_number}
-                                  onChange={(e) => setFormData({...formData, gst_number: e.target.value})}
-                                  placeholder="Optional"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                <input
+                                    className="form-input"
+                                    value={formData.gst_number}
+                                    onChange={(e) => setFormData({ ...formData, gst_number: e.target.value })}
+                                    placeholder="Optional"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
 
                             <div>
                                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Commission Rate (%)</label>
-                                <input 
-                                  type="number"
-                                  step="0.01"
-                                  className="form-input"
-                                  value={formData.commission_rate}
-                                  onChange={(e) => setFormData({...formData, commission_rate: e.target.value})}
-                                  placeholder="5.00"
-                                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#1a1a1a', color: '#fff' }}
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-input"
+                                    value={formData.commission_rate}
+                                    onChange={(e) => setFormData({ ...formData, commission_rate: e.target.value })}
+                                    placeholder="5.00"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#1a1a1a', color: '#fff' }}
                                 />
                             </div>
 
                             <div style={{ gridColumn: 'span 2', marginTop: '1rem', display: 'flex', gap: '10px' }}>
-                                <button 
-                                  type="submit"
-                                  disabled={createLoading}
-                                  style={{ 
-                                    flex: 1,
-                                    background: 'var(--purple-main)', 
-                                    color: 'white', 
-                                    border: 'none', 
-                                    padding: '12px', 
-                                    borderRadius: '12px', 
-                                    fontWeight: 600,
-                                    cursor: createLoading ? 'not-allowed' : 'pointer',
-                                    opacity: createLoading ? 0.7 : 1
-                                  }}>
+                                <button
+                                    type="submit"
+                                    disabled={createLoading}
+                                    style={{
+                                        flex: 1,
+                                        background: 'var(--purple-main)',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        fontWeight: 600,
+                                        cursor: createLoading ? 'not-allowed' : 'pointer',
+                                        opacity: createLoading ? 0.7 : 1
+                                    }}>
                                     {createLoading ? <Loader2 className="animate-spin" size={20} /> : 'Create Seller Account'}
                                 </button>
-                                <button 
-                                  type="button"
-                                  onClick={() => setShowModal(false)}
-                                  style={{ 
-                                    flex: 1,
-                                    background: 'none', 
-                                    color: '#64748b', 
-                                    border: '1px solid #e2e8f0', 
-                                    padding: '12px', 
-                                    borderRadius: '12px', 
-                                    fontWeight: 600,
-                                    cursor: 'pointer'
-                                  }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    style={{
+                                        flex: 1,
+                                        background: 'none',
+                                        color: '#64748b',
+                                        border: '1px solid #e2e8f0',
+                                        padding: '12px',
+                                        borderRadius: '12px',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                    }}>
                                     Cancel
                                 </button>
                             </div>
@@ -456,7 +480,7 @@ const SellersPage = () => {
                                     <DataRow label="IFSC Code" value={selectedSeller.bank_ifsc} />
                                 </div>
                             </div>
-                            
+
                             {/* Document Viewer */}
                             <div style={{ gridColumn: 'span 2' }}>
                                 <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -475,16 +499,42 @@ const SellersPage = () => {
                         </div>
 
                         <div style={{ marginTop: '2.5rem', paddingTop: '2rem', borderTop: '2px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                            <button 
+                            <button
                                 onClick={() => { handleStatusUpdate(selectedSeller.id, 'REJECTED'); setShowVerifyModal(false); }}
                                 style={{ padding: '12px 24px', borderRadius: '12px', background: '#fee2e2', color: '#dc2626', border: 'none', fontWeight: 700, cursor: 'pointer' }}>
                                 Reject Application
                             </button>
-                            <button 
+                            <button
                                 onClick={() => { handleStatusUpdate(selectedSeller.id, 'APPROVED'); setShowVerifyModal(false); }}
                                 style={{ padding: '12px 48px', borderRadius: '12px', background: 'var(--purple-main)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 12px rgba(111, 66, 193, 0.3)' }}>
                                 Approve Seller
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Commission Edit Modal */}
+            {showCommissionModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
+                    <div className="glass animate-fade-in" style={{ width: '90%', maxWidth: '400px', background: '#fff', borderRadius: '24px', padding: '2rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Update Commission Rate</h3>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '1.5rem', fontWeight: 600 }}>{selectedSeller?.business_name}</p>
+                        
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '8px' }}>Platform Commission (%)</label>
+                            <input 
+                                type="number" 
+                                value={editCommission}
+                                onChange={(e) => setEditCommission(e.target.value)}
+                                style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700 }}
+                                placeholder="e.g. 10.00"
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setShowCommissionModal(false)} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                            <button onClick={handleUpdateCommission} className="btn-purple" style={{ flex: 1 }}>Save Changes</button>
                         </div>
                     </div>
                 </div>
@@ -507,10 +557,10 @@ const DocCard = ({ label, url, isImage }) => {
     };
 
     return (
-        <div 
+        <div
             onClick={handleDownload}
-            style={{ 
-                background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', 
+            style={{
+                background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px',
                 cursor: url ? 'pointer' : 'default', opacity: url ? 1 : 0.5, transition: '0.2s',
                 display: 'flex', flexDirection: 'column', gap: '8px'
             }}
@@ -525,10 +575,8 @@ const DocCard = ({ label, url, isImage }) => {
                 </div>
             )}
             <div style={{ fontSize: '11px', fontWeight: 700, textAlign: 'center' }}>{url ? 'View Document' : 'Missing'}</div>
-            <style>{`.doc-card:hover { transform: translateY(-2px); border-color: var(--purple-main); }`}</style>
         </div>
     );
 };
 
 export default SellersPage;
-

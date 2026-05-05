@@ -23,8 +23,9 @@ import ContactSettingsPage from './pages/ContactSettings';
 import VehiclesPage from './pages/Vehicles';
 import LocationsPage from './pages/Locations';
 import ServiceableCitiesPage from './pages/ServiceableCities';
+import InvoicesPage from './pages/Invoices';
 
-import { LayoutDashboard, ShoppingBag, Box, CreditCard, Wrench, MessageSquare, LogOut, Users, Battery, Menu, X, Store, Search, Tag, Phone, PanelLeft, BatteryCharging, BatteryFull, BatteryIcon, ChevronLeft, ChevronRight, IndianRupee, MapPin } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Box, CreditCard, Wrench, MessageSquare, LogOut, Users, Battery, Menu, X, Store, Search, Tag, Phone, PanelLeft, BatteryCharging, BatteryFull, BatteryIcon, ChevronLeft, ChevronRight, IndianRupee, MapPin, FileText } from 'lucide-react';
 
 const SidebarItem = ({ to, icon: Icon, label, isCollapsed, onClick }) => {
   const location = useLocation();
@@ -102,6 +103,7 @@ const Sidebar = ({ isCollapsed, isMobile, toggleSidebar }) => {
           <SidebarItem to="/sellers" icon={Store} label="Sellers" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/coupons" icon={Tag} label="Coupons" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/payments" icon={CreditCard} label="Customer Pymts" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
+          <SidebarItem to="/invoices" icon={FileText} label="Invoices" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/withdrawals" icon={IndianRupee} label="Settlements" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/reviews" icon={MessageSquare} label="Reviews" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/installations" icon={Wrench} label="Installations" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
@@ -194,6 +196,7 @@ function App() {
             <Route path="/brands" element={<Layout><BrandsPage /></Layout>} />
             <Route path="/coupons" element={<Layout><CouponsPage /></Layout>} />
             <Route path="/payments" element={<Layout><PaymentsPage /></Layout>} />
+            <Route path="/invoices" element={<Layout><InvoicesPage /></Layout>} />
             <Route path="/withdrawals" element={<Layout><WithdrawalsPage /></Layout>} />
             <Route path="/reviews" element={<Layout><ReviewsPage /></Layout>} />
             <Route path="/installations" element={<Layout><InstallationRequestsPage /></Layout>} />

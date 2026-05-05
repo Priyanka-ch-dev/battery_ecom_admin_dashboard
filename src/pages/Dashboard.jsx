@@ -4,9 +4,9 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area
 } from 'recharts';
-import { 
-  TrendingUp, IndianRupee, ShoppingCart, Search, Users, 
-  AlertCircle, Loader2, ChevronRight, Store 
+import {
+  TrendingUp, IndianRupee, ShoppingCart, Search, Users,
+  AlertCircle, Loader2, ChevronRight, Store, Shield
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -188,7 +188,17 @@ const DashboardPage = () => {
           iconColor="#e65100"
           loading={loading}
         />
-
+        <StatCard
+          label="Platform Earnings"
+          value={`₹${data?.metrics?.lifetime_commission?.toLocaleString() || '0.00'}`}
+          trendValue={`₹${data?.metrics?.commission_today?.toLocaleString() || '0'}`}
+          trend="collected today"
+          icon={Shield}
+          bgColor="rgba(111, 66, 193, 0.15)"
+          borderColor="rgba(111, 66, 193, 0.4)"
+          iconColor="var(--purple-main)"
+          loading={loading}
+        />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
@@ -230,14 +240,14 @@ const DashboardPage = () => {
           ) : orders.length === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-dim)' }}>No recent orders found.</div>
           ) : orders.map(order => (
-            <div key={order.id} 
+            <div key={order.id}
               onClick={() => navigate(`/orders/${order.id}`)}
               className="modern-table-row" style={{
-              display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1.5fr 1.5fr 1.2fr 1.5fr 40px',
-              padding: '16px 12px', borderRadius: '12px', alignItems: 'center', fontSize: '0.9rem',
-              transition: 'background 0.2s ease',
-              borderBottom: '1px solid #f1f5f9'
-            }}>
+                display: 'grid', gridTemplateColumns: '1fr 2fr 1.2fr 1.5fr 1.5fr 1.2fr 1.5fr 40px',
+                padding: '16px 12px', borderRadius: '12px', alignItems: 'center', fontSize: '0.9rem',
+                transition: 'background 0.2s ease',
+                borderBottom: '1px solid #f1f5f9'
+              }}>
               <span style={{ fontWeight: 800, color: '#000' }}>#{order.id}</span>
               <span style={{ color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '10px', fontWeight: 600 }}>{order.customer_name || order.user_email}</span>
               <span style={{ fontWeight: 800, color: '#d32f2f' }}>₹{parseFloat(order.grand_total).toLocaleString()}</span>

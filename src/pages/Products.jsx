@@ -322,7 +322,15 @@ const ProductsPage = () => {
                 console.error('Error Data:', err.response.data);
                 console.error('Error Headers:', err.response.headers);
             }
-            alert('Operation failed. Please check the Developer Console for detailed API errors.');
+            
+            let errorMessage = 'Operation failed. Please check the Developer Console for detailed API errors.';
+            if (err.response?.data) {
+                const data = err.response.data;
+                if (data.make) errorMessage = data.make[0];
+                else if (data.model) errorMessage = data.model[0];
+                else if (data.non_field_errors) errorMessage = data.non_field_errors[0];
+            }
+            alert(errorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -377,7 +385,7 @@ const ProductsPage = () => {
             alert('Combo created successfully!');
         } catch (err) {
             console.error('Combo Create Error:', err.response?.data);
-            const errorMsg = err.response?.data?.non_field_errors?.[0] || 'Failed to create combo. Check if Inverter and Battery are different.';
+            const errorMsg = err.response?.data?.make?.[0] || err.response?.data?.model?.[0] || err.response?.data?.non_field_errors?.[0] || 'Failed to create combo. Check if Inverter and Battery are different.';
             alert(errorMsg);
         } finally {
             setComboSubmitting(false);
