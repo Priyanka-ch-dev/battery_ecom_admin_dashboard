@@ -10,8 +10,8 @@ const ContactSettingsPage = () => {
     const [message, setMessage] = useState('');
     const [formData, setFormData] = useState({
         company_name: '',
-        email: '',
-        phone: '',
+        support_email: '',
+        support_phone: '',
         address: '',
         support_hours: ''
     });
@@ -24,8 +24,8 @@ const ContactSettingsPage = () => {
                 if (res.data && Object.keys(res.data).length > 0) {
                     setFormData({
                         company_name: res.data.company_name || '',
-                        email: res.data.email || '',
-                        phone: res.data.phone || '',
+                        support_email: res.data.support_email || '',
+                        support_phone: res.data.support_phone || '',
                         address: res.data.address || '',
                         support_hours: res.data.support_hours || ''
                     });
@@ -104,8 +104,8 @@ const ContactSettingsPage = () => {
                             <input 
                                 required 
                                 type="email" 
-                                value={formData.email} 
-                                onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                                value={formData.support_email} 
+                                onChange={(e) => setFormData({...formData, support_email: e.target.value})} 
                                 placeholder="support@example.com"
                                 style={{ width: '100%' }}
                             />
@@ -116,8 +116,8 @@ const ContactSettingsPage = () => {
                             <input 
                                 required 
                                 type="text" 
-                                value={formData.phone} 
-                                onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                                value={formData.support_phone} 
+                                onChange={(e) => setFormData({...formData, support_phone: e.target.value})} 
                                 placeholder="+1 234 567 8900"
                                 style={{ width: '100%' }}
                             />
