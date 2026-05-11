@@ -45,12 +45,16 @@ export const AuthProvider = ({ children }) => {
       console.log('Attempting login for:', email);
       // Django USERNAME_FIELD is 'email', so SimpleJWT expects 'email' key
       const res = await api.post('users/login/', { email, password });
-      
+
       console.log('Login response received:', res.data);
       const { access, refresh, user: userData } = res.data;
-      
+
       if (!userData) {
         throw new Error('Access denied: Invalid user data.');
+      }
+
+      if (userData.role !== 'ADMIN') {
+        throw new Error('Unauthorized. Only administrators can access this panel.');
       }
 
       localStorage.setItem('access_token', access);

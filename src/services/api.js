@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://batteriesbazaar.com/';
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://127.0.0.1:8000/api/'
+  : 'https://batteriesbazaar.com/api/';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -23,11 +25,11 @@ api.interceptors.request.use((config) => {
 // Interceptor to handle token expiration
 api.interceptors.response.use((response) => response, async (error) => {
   const originalRequest = error.config;
-  
+
   if (error.response?.status === 401 && !originalRequest._retry) {
     originalRequest._retry = true;
     const refreshToken = localStorage.getItem('refresh_token');
-    
+
     if (refreshToken) {
       try {
         const res = await axios.post(`${API_BASE_URL}users/token/refresh/`, {
