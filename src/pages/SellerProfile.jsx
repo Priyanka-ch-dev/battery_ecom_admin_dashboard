@@ -11,15 +11,18 @@ const SellerProfilePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [seller, setSeller] = useState(null);
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [ordersLoading, setOrdersLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchSellerDetail = async () => {
             try {
                 setLoading(true);
-                const res = await api.get(`sellers/${id}/`);
+                const res = await api.get(`sellers/profiles/${id}/`);
                 setSeller(res.data);
+                fetchSellerOrders();
             } catch (err) {
                 console.error('Failed to fetch seller detail:', err);
                 setError('Could not load seller profile.');
@@ -27,6 +30,19 @@ const SellerProfilePage = () => {
                 setLoading(false);
             }
         };
+
+        const fetchSellerOrders = async () => {
+            try {
+                setOrdersLoading(true);
+                const res = await api.get(`sellers/profiles/${id}/orders/`);
+                setOrders(res.data.results || res.data);
+            } catch (err) {
+                console.error('Failed to fetch seller orders:', err);
+            } finally {
+                setOrdersLoading(false);
+            }
+        };
+
         fetchSellerDetail();
     }, [id]);
 
@@ -99,6 +115,7 @@ const SellerProfilePage = () => {
                             <InfoItem label="Account Name" value={seller.bank_account_name} />
                             <InfoItem label="Account Number" value={seller.bank_account_number} />
                             <InfoItem label="IFSC Code" value={seller.bank_ifsc} />
+                            <InfoItem label="Account Type" value={seller.bank_account_type} />
                         </div>
                     </div>
                 </div>
@@ -110,8 +127,13 @@ const SellerProfilePage = () => {
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <Shield size={20} color="var(--purple-main)" /> Business Identification
                             </h3>
-                            <div style={{ fontSize: '0.85rem', fontWeight: 700, background: '#f1f5f9', padding: '6px 16px', borderRadius: '20px' }}>
-                                Commission: {seller.commission}%
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, background: '#f1f5f9', padding: '6px 16px', borderRadius: '20px' }}>
+                                    Commission: {seller.commission}%
+                                </div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-dim)' }}>
+                                    Fixed: ₹{seller.commission_amt}
+                                </div>
                             </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -136,6 +158,91 @@ const SellerProfilePage = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Orders Section */}
+            <div className="glass" style={{ background: '#fff', borderRadius: '24px', padding: '2rem', border: '1px solid var(--glass-border)', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', marginTop: '2.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <FileText size={24} color="var(--purple-main)" /> Assigned Orders
+                    </h3>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-dim)' }}>
+                        {orders.length} Orders Found
+                    </div>
+                </div>
+
+                {ordersLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+                        <Loader2 className="animate-spin" size={32} color="var(--purple-main)" />
+                    </div>
+                ) : orders.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '4rem', background: '#f8fafc', borderRadius: '20px', color: 'var(--text-dim)' }}>
+                        <AlertCircle size={40} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                        <p style={{ fontWeight: 600 }}>No orders have been assigned to this seller yet.</p>
+                    </div>
+                ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Order ID</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Customer</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Products</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Amount</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Payment</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Delivery Status</th>
+                                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase' }}>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {orders.map(order => (
+                                    <tr key={order.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="order-row">
+                                        <td style={{ padding: '1.25rem 1rem', fontWeight: 800, color: 'var(--purple-main)' }}>#{order.id}</td>
+                                        <td style={{ padding: '1.25rem 1rem' }}>
+                                            <div style={{ fontWeight: 700 }}>{order.customer_name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{order.user_email}</div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem 1rem', maxWidth: '250px' }}>
+                                            <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
+                                                {order.items?.map((item, idx) => (
+                                                    <span key={item.id}>
+                                                        {item.product_detail?.name || 'Product'} (x{item.quantity})
+                                                        {idx < order.items.length - 1 ? ', ' : ''}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1.25rem 1rem', fontWeight: 700 }}>₹{order.grand_total}</td>
+                                        <td style={{ padding: '1.25rem 1rem' }}>
+                                            <span style={{ 
+                                                padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800,
+                                                background: ['SUCCESS', 'PAID'].includes(order.payment_status) ? '#ecfdf5' : '#fffbeb',
+                                                color: ['SUCCESS', 'PAID'].includes(order.payment_status) ? '#059669' : '#d97706'
+                                            }}>
+                                                {order.payment_status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1.25rem 1rem' }}>
+                                            <span style={{ 
+                                                padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800,
+                                                background: order.status === 'DELIVERED' ? '#ecfdf5' : '#eff6ff',
+                                                color: order.status === 'DELIVERED' ? '#059669' : '#3b82f6'
+                                            }}>
+                                                {order.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1.25rem 1rem', fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                                            {new Date(order.created_at).toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+                <style>{`
+                    .order-row:hover { background: #f8fafc; cursor: pointer; }
+                `}</style>
             </div>
         </div>
     );

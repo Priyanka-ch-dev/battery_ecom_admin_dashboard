@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Store, CheckCircle, XCircle, Mail, Shield,
     Loader2, UserCheck, UserX, Search, Eye,
-    FileText, CreditCard, Building2, User
+    FileText, CreditCard, Building2, User, Phone
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -16,7 +16,7 @@ const SellersPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [showVerifyModal, setShowVerifyModal] = useState(false);
     const [showCommissionModal, setShowCommissionModal] = useState(false);
-    const [editCommission, setEditCommission] = useState('');
+    const [editCommission, setEditCommission] = useState({ rate: '', amount: '' });
     const [selectedSeller, setSelectedSeller] = useState(null);
     const [formData, setFormData] = useState({
         username: '',
@@ -25,6 +25,7 @@ const SellersPage = () => {
         business_name: '',
         gst_number: '',
         commission_rate: '0.00',
+        commission_amount: '0.00',
         phone_number: ''
     });
 
@@ -33,7 +34,7 @@ const SellersPage = () => {
     const fetchSellers = async (search = '', status = '') => {
         try {
             setLoading(true);
-            let url = 'sellers/';
+            let url = 'sellers/profiles/';
             const params = [];
             if (search) params.push(`search=${search}`);
             if (status) params.push(`status=${status}`);
@@ -59,7 +60,7 @@ const SellersPage = () => {
 
     const handleStatusUpdate = async (id, newStatus) => {
         try {
-            await api.patch(`sellers/${id}/update_status/`, { status: newStatus });
+            await api.patch(`sellers/profiles/${id}/update_status/`, { status: newStatus });
             fetchSellers(); // Refresh the list
         } catch (err) {
             console.error('Status update failed:', err);
@@ -71,7 +72,7 @@ const SellersPage = () => {
         e.preventDefault();
         try {
             setCreateLoading(true);
-            await api.post('sellers/manually_create_seller/', formData);
+            await api.post('sellers/profiles/manually_create_seller/', formData);
             setShowModal(false);
             setFormData({
                 username: '',
@@ -80,6 +81,7 @@ const SellersPage = () => {
                 business_name: '',
                 gst_number: '',
                 commission_rate: '0.00',
+                commission_amount: '0.00',
                 phone_number: ''
             });
             fetchSellers();
@@ -93,12 +95,19 @@ const SellersPage = () => {
     };
 
     const handleUpdateCommission = async () => {
-        if (!selectedSeller || !editCommission) return;
+        if (!selectedSeller) return;
         try {
-            await api.patch(`sellers/${selectedSeller.id}/`, { commission: editCommission });
+            await api.patch(`sellers/profiles/${selectedSeller.id}/`, { 
+                commission: editCommission.rate,
+                commission_amt: editCommission.amount
+            });
             setShowCommissionModal(false);
-            setSellers(sellers.map(s => s.id === selectedSeller.id ? { ...s, commission: editCommission } : s));
-            alert('Commission rate updated successfully.');
+            setSellers(sellers.map(s => s.id === selectedSeller.id ? { 
+                ...s, 
+                commission: editCommission.rate,
+                commission_amt: editCommission.amount 
+            } : s));
+            alert('Commission details updated successfully.');
         } catch (err) {
             console.error('Failed to update commission:', err);
             alert('Error updating commission rate.');
@@ -216,15 +225,24 @@ const SellersPage = () => {
                                         {seller.gst || 'Not Provided'}
                                     </td>
                                     <td style={{ padding: '1.25rem', fontWeight: 600 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            {seller.commission}%
-                                            <button 
-                                                onClick={() => { setSelectedSeller(seller); setEditCommission(seller.commission); setShowCommissionModal(true); }}
-                                                style={{ padding: '4px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}
-                                                title="Edit Commission"
-                                            >
-                                                <Shield size={14} color="var(--purple-main)" />
-                                            </button>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ fontSize: '0.85rem' }}>{seller.commission}%</span>
+                                                <button 
+                                                    onClick={() => { 
+                                                        setSelectedSeller(seller); 
+                                                        setEditCommission({ rate: seller.commission, amount: seller.commission_amt }); 
+                                                        setShowCommissionModal(true); 
+                                                    }}
+                                                    style={{ padding: '4px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}
+                                                    title="Edit Commission"
+                                                >
+                                                    <Shield size={14} color="var(--purple-main)" />
+                                                </button>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                                                ₹{seller.commission_amt} Fixed
+                                            </div>
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem' }}>
@@ -393,7 +411,20 @@ const SellersPage = () => {
                                     value={formData.commission_rate}
                                     onChange={(e) => setFormData({ ...formData, commission_rate: e.target.value })}
                                     placeholder="5.00"
-                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#1a1a1a', color: '#fff' }}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '6px' }}>Direct Commission (₹)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    className="form-input"
+                                    value={formData.commission_amount}
+                                    onChange={(e) => setFormData({ ...formData, commission_amount: e.target.value })}
+                                    placeholder="100.00"
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#ffffff', color: '#000000', fontWeight: 500 }}
                                 />
                             </div>
 
@@ -452,6 +483,23 @@ const SellersPage = () => {
                             <button onClick={() => setShowVerifyModal(false)} style={{ padding: '8px', borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer' }}><XCircle size={24} /></button>
                         </div>
 
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--purple-main)' }}>
+                                <img src={selectedSeller.owner_image || `https://ui-avatars.com/api/?name=${selectedSeller.seller_name}&background=6f42c1&color=fff`} alt="Owner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                            <div>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 800 }}>{selectedSeller.seller_name}</h2>
+                                <div style={{ display: 'flex', gap: '15px', marginTop: '5px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                                        <Phone size={14} /> {selectedSeller.phone || 'No Phone'}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                                        <Shield size={14} /> Role: {selectedSeller.role || 'Seller'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '2rem' }}>
                             {/* Legal Identity */}
                             <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
@@ -478,6 +526,7 @@ const SellersPage = () => {
                                     <DataRow label="Bank Name" value={selectedSeller.bank_name} />
                                     <DataRow label="Acc Number" value={selectedSeller.bank_account_number} />
                                     <DataRow label="IFSC Code" value={selectedSeller.bank_ifsc} />
+                                    <DataRow label="Acc Type" value={selectedSeller.bank_account_type} />
                                 </div>
                             </div>
 
@@ -521,15 +570,27 @@ const SellersPage = () => {
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '0.5rem' }}>Update Commission Rate</h3>
                         <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)', marginBottom: '1.5rem', fontWeight: 600 }}>{selectedSeller?.business_name}</p>
                         
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '8px' }}>Platform Commission (%)</label>
-                            <input 
-                                type="number" 
-                                value={editCommission}
-                                onChange={(e) => setEditCommission(e.target.value)}
-                                style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700 }}
-                                placeholder="e.g. 10.00"
-                            />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '8px' }}>Rate (%)</label>
+                                <input 
+                                    type="number" 
+                                    value={editCommission.rate}
+                                    onChange={(e) => setEditCommission({ ...editCommission, rate: e.target.value })}
+                                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700 }}
+                                    placeholder="5.00"
+                                />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, marginBottom: '8px' }}>Fixed (₹)</label>
+                                <input 
+                                    type="number" 
+                                    value={editCommission.amount}
+                                    onChange={(e) => setEditCommission({ ...editCommission, amount: e.target.value })}
+                                    style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '1rem', fontWeight: 700 }}
+                                    placeholder="100.00"
+                                />
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem' }}>

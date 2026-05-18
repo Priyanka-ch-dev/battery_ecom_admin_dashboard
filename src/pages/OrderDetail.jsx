@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     ChevronLeft, Package, User, MapPin, CreditCard, 
-    Truck, Clock, AlertCircle, Loader2, IndianRupee, Shield 
+    Truck, Clock, AlertCircle, Loader2, IndianRupee, Shield, Camera
 } from 'lucide-react';
 import api from '../services/api';
 
@@ -44,12 +44,26 @@ const OrderDetailPage = () => {
     );
 
     const getStatusStyle = (status) => {
-        switch (status) {
-            case 'DELIVERED': return { bg: '#ecfdf5', color: '#059669' };
-            case 'CANCELLED': return { bg: '#fff1f2', color: '#e11d48' };
-            case 'PENDING': return { bg: '#fffbeb', color: '#d97706' };
-            default: return { bg: '#f1f5f9', color: '#475569' };
-        }
+        const config = {
+            'ASSIGNED': { bg: '#EFF6FF', color: '#2563EB', label: 'Order Assigned' },
+            'SCHEDULED': { bg: '#F5F3FF', color: '#7C3AED', label: 'Scheduled' },
+            'INSTALLATION_STARTED': { bg: '#ECFDF5', color: '#10B981', label: 'Started' },
+            'IN_PROGRESS': { bg: '#FEF3C7', color: '#D97706', label: 'In Progress' },
+            'CONTINUED_TOMORROW': { bg: '#FFF5F5', color: '#E53E3E', label: 'Paused - Continued Tomorrow' },
+            'RESUMED': { bg: '#EBF8FF', color: '#3182CE', label: 'Resumed' },
+            'COMPLETED': { bg: '#ECFDF5', color: '#10B981', label: 'Completed' },
+            'AWAITING_CONFIRMATION': { bg: '#FEF3C7', color: '#D97706', label: 'Awaiting Customer' },
+            'VERIFIED': { bg: '#ECFDF5', color: '#10B981', label: 'Verified' },
+            'CLOSED': { bg: '#F3F4F6', color: '#6B7280', label: 'Closed Successfully' },
+            
+            // Legacy support
+            'PENDING': { bg: '#FFFBEB', color: '#D97706', label: 'Pending' },
+            'CONFIRMED': { bg: '#EFF6FF', color: '#2563EB', label: 'Confirmed' },
+            'SHIPPED': { bg: '#F5F3FF', color: '#7C3AED', label: 'Shipped' },
+            'OUT_FOR_DELIVERY': { bg: '#FEF3C7', color: '#D97706', label: 'Out for Delivery' },
+            'DELIVERED': { bg: '#ECFDF5', color: '#10B981', label: 'Delivered' },
+        };
+        return config[status] || { bg: '#f1f5f9', color: '#475569' };
     };
 
     const statusStyle = getStatusStyle(order.status);
@@ -143,6 +157,153 @@ const OrderDetailPage = () => {
                                 <span style={{ fontWeight: 800 }}>Total Amount</span>
                                 <span style={{ fontWeight: 800, color: 'var(--red-main)' }}>₹{parseFloat(order.grand_total || 0).toLocaleString()}</span>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Live Installation Progress & Admin Control Panel */}
+                    <div className="glass" style={{ background: '#fff', borderRadius: '20px', padding: '1.5rem', border: '1px solid var(--glass-border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                                <Shield size={20} color="var(--purple-main)" /> Installation Control Panel & History
+                            </h3>
+                            {/* Admin Action Buttons */}
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                {(order.status === 'COMPLETED' || order.status === 'AWAITING_CONFIRMATION') && (
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const res = await api.patch(`orders/${order.id}/`, { status: 'VERIFIED' });
+                                                setOrder(res.data);
+                                                alert('Installation successfully verified!');
+                                            } catch (err) {
+                                                alert(err.response?.data?.error || 'Failed to verify installation.');
+                                            }
+                                        }}
+                                        className="btn-purple"
+                                        style={{ background: '#10B981', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                        Verify Installation
+                                    </button>
+                                )}
+                                {order.status === 'VERIFIED' && (
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                const res = await api.patch(`orders/${order.id}/`, { status: 'CLOSED' });
+                                                setOrder(res.data);
+                                                alert('Order closed successfully!');
+                                            } catch (err) {
+                                                alert(err.response?.data?.error || 'Failed to close order.');
+                                            }
+                                        }}
+                                        className="btn-purple"
+                                        style={{ background: '#4F46E5', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                        Close Order Successfully
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Before/After Evidence Photos */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '2rem' }}>
+                            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '10px' }}>Before Installation Setup</div>
+                                {order.before_image ? (
+                                    <a href={order.before_image} target="_blank" rel="noreferrer">
+                                        <img src={order.before_image} alt="Setup Before" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+                                    </a>
+                                ) : (
+                                    <div style={{ height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                                        <Camera size={32} style={{ marginBottom: '8px' }} />
+                                        <span>No Before Photo Uploaded</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '10px' }}>After Completed Work</div>
+                                {order.after_image ? (
+                                    <a href={order.after_image} target="_blank" rel="noreferrer">
+                                        <img src={order.after_image} alt="Work After" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+                                    </a>
+                                ) : (
+                                    <div style={{ height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                                        <Camera size={32} style={{ marginBottom: '8px' }} />
+                                        <span>No After Photo Uploaded</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Live Tracking Timeline */}
+                        <div>
+                            <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-dim)', textTransform: 'uppercase', marginBottom: '16px', letterSpacing: '0.05em' }}>Tracking History Timeline</div>
+                            {(!order.tracking_history || order.tracking_history.length === 0) ? (
+                                <div style={{ color: 'var(--text-dim)', fontSize: '13px', fontStyle: 'italic', padding: '12px', background: '#f8fafc', borderRadius: '8px' }}>
+                                    No timeline progress tracked yet.
+                                </div>
+                            ) : (
+                                <div style={{ position: 'relative', borderLeft: '2px solid #e2e8f0', marginLeft: '12px', paddingLeft: '20px', paddingTop: '8px' }}>
+                                    {order.tracking_history.map((log, index) => {
+                                        const getStatusColor = (status) => {
+                                            const config = {
+                                                'ASSIGNED': { color: '#2563EB', label: 'Order Assigned' },
+                                                'SCHEDULED': { color: '#7C3AED', label: 'Scheduled' },
+                                                'INSTALLATION_STARTED': { color: '#10B981', label: 'Started' },
+                                                'IN_PROGRESS': { color: '#D97706', label: 'In Progress' },
+                                                'CONTINUED_TOMORROW': { color: '#E53E3E', label: 'Paused - Continued Tomorrow' },
+                                                'RESUMED': { color: '#3182CE', label: 'Resumed' },
+                                                'COMPLETED': { color: '#10B981', label: 'Completed' },
+                                                'AWAITING_CONFIRMATION': { color: '#D97706', label: 'Awaiting Customer' },
+                                                'VERIFIED': { color: '#10B981', label: 'Verified' },
+                                                'CLOSED': { color: '#6B7280', label: 'Closed Successfully' }
+                                            };
+                                            return config[status] || { color: '#94A3B8', label: status };
+                                        };
+                                        const c = getStatusColor(log.status);
+                                        return (
+                                            <div key={log.id || index} style={{ position: 'relative', marginBottom: '24px' }}>
+                                                {/* Timeline Node Pin */}
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    left: '-29px',
+                                                    top: '4px',
+                                                    width: '16px',
+                                                    height: '16px',
+                                                    borderRadius: '50%',
+                                                    background: '#fff',
+                                                    border: `3px solid ${c.color}`,
+                                                    boxShadow: '0 0 0 4px #fff'
+                                                }}></div>
+                                                <div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
+                                                        <span style={{ fontWeight: 800, fontSize: '13px', color: '#111827' }}>
+                                                            {log.status_display || c.label}
+                                                        </span>
+                                                        <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 600 }}>
+                                                            {new Date(log.created_at).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    {log.notes && (
+                                                        <p style={{
+                                                            fontSize: '12px',
+                                                            color: 'var(--text-dim)',
+                                                            marginTop: '6px',
+                                                            background: '#f8fafc',
+                                                            padding: '8px 12px',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #e2e8f0',
+                                                            lineHeight: 1.4
+                                                        }}>
+                                                            {log.notes}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </div>
 

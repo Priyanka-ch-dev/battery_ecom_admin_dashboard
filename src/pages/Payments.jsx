@@ -53,7 +53,7 @@ const PaymentsPage = () => {
         if (!sellerId) return alert('No seller linked to this order.');
         try {
             setProcessingId(`${orderId}-settle`);
-            await api.post('settlements/', { 
+            await api.post('sellers/settlements/', { 
                 seller: sellerId,
                 transactions: [orderId] 
             });

@@ -21,45 +21,76 @@ const ProductsPage = () => {
     const [brandFilter, setBrandFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
-    // Modal State
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         name: '', slug: '', sku: '', description: '', price: '', stock: '',
-        category: '', brand: '', is_active: true, warranty: '',
-        make: '', model: '', state: '', city: '',
+        category: [], brand: [], is_active: true, warranty: '',
+        make: [], model: [], state: [], city: [], pincodes: [],
         exchange_available: false, exchange_discount: 0
     });
+    const [availablePincodes, setAvailablePincodes] = useState([]);
     // Separate state for images and specifications
     const [specRows, setSpecRows] = useState([{ key: '', value: '' }]);
     const [primaryImageIndex, setPrimaryImageIndex] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [buyingProduct, setBuyingProduct] = useState(null);
+    // Modal State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState(null);
 
     // Combo State
     const [combos, setCombos] = useState([]);
-    const [isComboModalOpen, setIsComboModalOpen] = useState(false);
     const [comboFormData, setComboFormData] = useState({
-        name: '', slug: '', sku: '', price: '', inverter: '', battery: '', 
-        is_active: true, warranty: '', make: '', model: '', state: '', city: ''
+        name: '', slug: '', sku: '', price: '', inverter: '', battery: '',
+        is_active: true, warranty: '', make: [], model: [], state: [], city: [], pincodes: [],
+        category: [], brand: [], description: '', special_price: '',
+        exchange_available: false, exchange_discount: 0
     });
-    const [comboImageFile, setComboImageFile] = useState(null);
-    const [comboImagePreview, setComboImagePreview] = useState(null);
+    const [isComboModalOpen, setIsComboModalOpen] = useState(false);
+    const [editingCombo, setEditingCombo] = useState(null);
+    const [comboImages, setComboImages] = useState([]);
+    const [comboSpecRows, setComboSpecRows] = useState([{ key: '', value: '' }]);
+    const [comboPrimaryImageIndex, setComboPrimaryImageIndex] = useState(null);
     const [comboSubmitting, setComboSubmitting] = useState(false);
     const [activeTab, setActiveTab] = useState('products'); // 'products' or 'combos'
 
     const handleComboImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setComboImageFile(file);
-            setComboImagePreview(URL.createObjectURL(file));
+        const files = Array.from(e.target.files);
+        const newImages = files.map(file => ({
+            url: URL.createObjectURL(file),
+            file: file
+        }));
+        setComboImages([...comboImages, ...newImages]);
+        if (comboPrimaryImageIndex === null && newImages.length > 0) {
+            setComboPrimaryImageIndex(comboImages.length);
         }
         e.target.value = null;
     };
 
-    const removeComboImage = () => {
-        setComboImageFile(null);
-        setComboImagePreview(null);
+    const removeComboImage = (index) => {
+        const newImages = [...comboImages];
+        URL.revokeObjectURL(newImages[index].url);
+        newImages.splice(index, 1);
+        setComboImages(newImages);
+        if (comboPrimaryImageIndex === index) setComboPrimaryImageIndex(null);
+        else if (comboPrimaryImageIndex > index) setComboPrimaryImageIndex(comboPrimaryImageIndex - 1);
+    };
+
+    const handleAddComboSpecRow = () => {
+        setComboSpecRows([...comboSpecRows, { key: '', value: '' }]);
+    };
+
+    const handleComboSpecChange = (index, field, value) => {
+        const newRows = [...comboSpecRows];
+        newRows[index][field] = value;
+        setComboSpecRows(newRows);
+    };
+
+    const removeComboSpecRow = (index) => {
+        if (comboSpecRows.length > 1) {
+            const newRows = [...comboSpecRows];
+            newRows.splice(index, 1);
+            setComboSpecRows(newRows);
+        }
     };
 
     const slugify = (text) => {
@@ -77,6 +108,58 @@ const ProductsPage = () => {
             name: val,
             slug: slugify(val)
         });
+    };
+
+    const handleComboNameChange = (val) => {
+        setComboFormData({
+            ...comboFormData,
+            name: val,
+            slug: slugify(val)
+        });
+    };
+
+    const handleRemoveTag = (idToRemove, fieldName, isCombo = false) => {
+        const idStr = idToRemove.toString();
+        if (isCombo) {
+            setComboFormData(prev => ({
+                ...prev,
+                [fieldName]: prev[fieldName].filter(id => id.toString() !== idStr)
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: prev[fieldName].filter(id => id.toString() !== idStr)
+            }));
+        }
+    };
+
+    const RenderSelectedTags = (ids, list, fieldName, isCombo = false) => {
+        if (!ids || ids.length === 0) return null;
+        return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px', padding: '8px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                {ids.map(id => {
+                    const item = list.find(x => x.id.toString() === id.toString());
+                    if (!item) return null;
+                    return (
+                        <div key={id} style={{ 
+                            background: '#eff6ff', 
+                            color: '#2563eb', 
+                            padding: '4px 10px', 
+                            borderRadius: '6px', 
+                            fontSize: '0.75rem', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px',
+                            fontWeight: 600,
+                            border: '1px solid #bfdbfe'
+                        }}>
+                            {item.name}
+                            <X size={12} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => handleRemoveTag(id, fieldName, isCombo)} />
+                        </div>
+                    );
+                })}
+            </div>
+        );
     };
 
     const fetchData = async (search = '', cat = '', brand = '', status = 'all') => {
@@ -99,19 +182,16 @@ const ProductsPage = () => {
             ]);
 
             // Handle DRF Pagination (results) or simple list
-            const productsData = prodRes.data.results || prodRes.data;
-            if (!Array.isArray(productsData)) {
-                console.error('API Error: Product data is not an array', prodRes.data);
-                throw new Error('Invalid data format received from server');
-            }
-
+            const productsData = Array.isArray(prodRes.data?.results) ? prodRes.data.results : (Array.isArray(prodRes.data) ? prodRes.data : []);
+            
             setProducts(productsData);
-            setCombos(comboRes.data.results || comboRes.data || []);
-            setCategories(Array.isArray(catRes.data.results) ? catRes.data.results : (Array.isArray(catRes.data) ? catRes.data : []));
-            setBrands(Array.isArray(brandRes.data.results) ? brandRes.data.results : (Array.isArray(brandRes.data) ? brandRes.data : []));
-            setMakes(Array.isArray(makeRes.data.results) ? makeRes.data.results : (Array.isArray(makeRes.data) ? makeRes.data : []));
-            setStates(Array.isArray(stateRes.data.results) ? stateRes.data.results : (Array.isArray(stateRes.data) ? stateRes.data : []));
-            console.log('Inventory loaded successfully:', { count: productsData.length, comboCount: (comboRes.data.results || comboRes.data || []).length });
+            setCombos(Array.isArray(comboRes.data?.results) ? comboRes.data.results : (Array.isArray(comboRes.data) ? comboRes.data : []));
+            setCategories(Array.isArray(catRes.data?.results) ? catRes.data.results : (Array.isArray(catRes.data) ? catRes.data : []));
+            setBrands(Array.isArray(brandRes.data?.results) ? brandRes.data.results : (Array.isArray(brandRes.data) ? brandRes.data : []));
+            setMakes(Array.isArray(makeRes.data?.results) ? makeRes.data.results : (Array.isArray(makeRes.data) ? makeRes.data : []));
+            setStates(Array.isArray(stateRes.data?.results) ? stateRes.data.results : (Array.isArray(stateRes.data) ? stateRes.data : []));
+            
+            console.log('Inventory loaded successfully:', { count: productsData.length, comboCount: (Array.isArray(comboRes.data?.results) ? comboRes.data.results : (Array.isArray(comboRes.data) ? comboRes.data : [])).length });
         } catch (err) {
             console.error('Products Fetch Error:', {
                 status: err.response?.status,
@@ -125,10 +205,6 @@ const ProductsPage = () => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
         const timeoutId = setTimeout(() => {
             fetchData(searchTerm, categoryFilter, brandFilter, statusFilter);
         }, 300);
@@ -138,11 +214,19 @@ const ProductsPage = () => {
     // Fetch models when make changes
     useEffect(() => {
         const fetchModels = async () => {
-            const makeId = formData.make || comboFormData.make;
-            if (makeId) {
+            const makeIds = (activeTab === 'products' ? formData.make : comboFormData.make) || [];
+            if (makeIds.length > 0) {
                 try {
-                    const res = await api.get(`products/models/?make_id=${makeId}`);
-                    setModels(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []));
+                    // Fetch for all selected makes and combine
+                    const responses = await Promise.all(makeIds.map(id => api.get(`products/models/?make_id=${id}`)));
+                    let allModels = [];
+                    responses.forEach(res => {
+                        const data = res.data.results || res.data;
+                        if (Array.isArray(data)) {
+                            allModels = [...allModels, ...data];
+                        }
+                    });
+                    setModels(allModels);
                 } catch (err) {
                     console.error('Error fetching models:', err);
                 }
@@ -151,16 +235,23 @@ const ProductsPage = () => {
             }
         };
         fetchModels();
-    }, [formData.make, comboFormData.make]);
+    }, [formData.make, comboFormData.make, activeTab]);
 
     // Fetch cities when state changes
     useEffect(() => {
         const fetchCities = async () => {
-            const stateId = formData.state || comboFormData.state;
-            if (stateId) {
+            const stateIds = (activeTab === 'products' ? formData.state : comboFormData.state) || [];
+            if (stateIds.length > 0) {
                 try {
-                    const res = await api.get(`locations/cities/?state_id=${stateId}`);
-                    setCities(Array.isArray(res.data.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []));
+                    const responses = await Promise.all(stateIds.map(id => api.get(`locations/cities/?state_id=${id}`)));
+                    let allCities = [];
+                    responses.forEach(res => {
+                        const data = res.data.results || res.data;
+                        if (Array.isArray(data)) {
+                            allCities = [...allCities, ...data];
+                        }
+                    });
+                    setCities(allCities);
                 } catch (err) {
                     console.error('Error fetching cities:', err);
                 }
@@ -169,7 +260,17 @@ const ProductsPage = () => {
             }
         };
         fetchCities();
-    }, [formData.state, comboFormData.state]);
+    }, [formData.state, comboFormData.state, activeTab, isModalOpen, isComboModalOpen]);
+    
+    // Filter available pincodes based on selected cities
+    useEffect(() => {
+        const selectedCityIds = (activeTab === 'products' ? formData.city : comboFormData.city) || [];
+        // Flatten pincodes from selected cities
+        const pins = cities
+            .filter(c => selectedCityIds.some(id => id.toString() === c.id.toString()))
+            .flatMap(c => (c.pincodes || []).map(p => ({ ...p, name: `${p.pincode} (${c.name})` })));
+        setAvailablePincodes(pins);
+    }, [formData.city, comboFormData.city, cities, activeTab, isModalOpen, isComboModalOpen]);
 
     const handleBuy = async (productId) => {
         setBuyingProduct(productId);
@@ -190,6 +291,7 @@ const ProductsPage = () => {
     };
 
     const handleOpenModal = (product = null) => {
+        setActiveTab('products');
         if (product) {
             setEditingProduct(product);
             setFormData({
@@ -199,14 +301,15 @@ const ProductsPage = () => {
                 description: product.description,
                 price: product.price,
                 stock: product.stock,
-                category: product.category,
-                brand: product.brand,
+                category: product.category || [],
+                brand: product.brand || [],
                 is_active: product.is_active,
                 warranty: product.warranty || '',
-                make: product.make || '',
-                model: product.model || '',
-                state: product.state || '',
-                city: product.city || '',
+                make: product.make || [],
+                model: product.model || [],
+                state: product.state || [],
+                city: product.city || [],
+                pincodes: product.pincodes || [],
                 exchange_available: product.exchange_available || false,
                 exchange_discount: product.exchange_discount || 0,
                 images: product.images ? product.images.map(img => ({ id: img.id, url: img.image, is_primary: img.is_primary })) : []
@@ -221,8 +324,8 @@ const ProductsPage = () => {
             setEditingProduct(null);
             setFormData({
                 name: '', slug: '', sku: '', description: '', price: '', stock: '',
-                category: '', brand: '', is_active: true, warranty: '',
-                make: '', model: '', state: '', city: '',
+                category: [], brand: [], is_active: true, warranty: '',
+                make: [], model: [], state: [], city: [],
                 exchange_available: false, exchange_discount: 0
             });
             setSpecRows([{ key: '', value: '' }]);
@@ -247,12 +350,16 @@ const ProductsPage = () => {
             productFd.append('stock', formData.stock);
             productFd.append('is_active', formData.is_active);
             if (formData.warranty) productFd.append('warranty', formData.warranty);
-            if (formData.category) productFd.append('category', formData.category);
-            if (formData.brand) productFd.append('brand', formData.brand);
-            if (formData.make) productFd.append('make', formData.make);
-            if (formData.model) productFd.append('model', formData.model);
-            if (formData.state) productFd.append('state', formData.state);
-            if (formData.city) productFd.append('city', formData.city);
+            
+            // Append M2M fields
+            formData.category.forEach(id => productFd.append('category', id));
+            formData.brand.forEach(id => productFd.append('brand', id));
+            formData.make.forEach(id => productFd.append('make', id));
+            formData.model.forEach(id => productFd.append('model', id));
+            formData.state.forEach(id => productFd.append('state', id));
+            formData.city.forEach(id => productFd.append('city', id));
+            formData.pincodes.forEach(id => productFd.append('pincodes', id));
+
             productFd.append('exchange_available', formData.exchange_available);
             productFd.append('exchange_discount', formData.exchange_discount);
 
@@ -322,7 +429,7 @@ const ProductsPage = () => {
                 console.error('Error Data:', err.response.data);
                 console.error('Error Headers:', err.response.headers);
             }
-            
+
             let errorMessage = 'Operation failed. Please check the Developer Console for detailed API errors.';
             if (err.response?.data) {
                 const data = err.response.data;
@@ -348,6 +455,62 @@ const ProductsPage = () => {
         }
     };
 
+    const handleOpenComboModal = (combo = null) => {
+        setActiveTab('combos');
+        if (combo) {
+            setEditingCombo(combo);
+            setComboFormData({
+                name: combo.name,
+                slug: combo.slug,
+                sku: combo.sku,
+                price: combo.price,
+                inverter: combo.inverter,
+                battery: combo.battery,
+                is_active: combo.is_active,
+                warranty: combo.warranty || '',
+                make: combo.make || [],
+                model: combo.model || [],
+                state: combo.state || [],
+                city: combo.city || [],
+                pincodes: combo.pincodes || [],
+                category: combo.category || [],
+                brand: combo.brand || [],
+                description: combo.description || '',
+                special_price: combo.special_price || '',
+                exchange_available: combo.exchange_available || false,
+                exchange_discount: combo.exchange_discount || 0
+            });
+            // Load existing images
+            if (combo.images) {
+                setComboImages(combo.images.map(img => ({
+                    id: img.id,
+                    url: img.image,
+                    is_primary: img.is_primary
+                })));
+                const primaryIdx = combo.images.findIndex(img => img.is_primary);
+                setComboPrimaryImageIndex(primaryIdx >= 0 ? primaryIdx : null);
+            }
+            // Load existing specifications
+            if (combo.specifications && combo.specifications.length > 0) {
+                setComboSpecRows(combo.specifications.map(s => ({ key: s.key, value: s.value })));
+            } else {
+                setComboSpecRows([{ key: '', value: '' }]);
+            }
+        } else {
+            setEditingCombo(null);
+            setComboFormData({
+                name: '', slug: '', sku: '', price: '', inverter: '', battery: '',
+                is_active: true, warranty: '', make: [], model: [], state: [], city: [],
+                category: [], brand: [], description: '', special_price: '',
+                exchange_available: false, exchange_discount: 0
+            });
+            setComboImages([]);
+            setComboSpecRows([{ key: '', value: '' }]);
+            setComboPrimaryImageIndex(null);
+        }
+        setIsComboModalOpen(true);
+    };
+
     const handleComboSubmit = async (e) => {
         e.preventDefault();
         setComboSubmitting(true);
@@ -360,32 +523,72 @@ const ProductsPage = () => {
             fd.append('inverter', comboFormData.inverter);
             fd.append('battery', comboFormData.battery);
             fd.append('is_active', comboFormData.is_active);
+            fd.append('description', comboFormData.description);
+            if (comboFormData.special_price) fd.append('special_price', comboFormData.special_price);
+            fd.append('exchange_available', comboFormData.exchange_available);
+            fd.append('exchange_discount', comboFormData.exchange_discount);
+
             if (comboFormData.warranty) fd.append('warranty', comboFormData.warranty);
-            if (comboFormData.make) fd.append('make', comboFormData.make);
-            if (comboFormData.model) fd.append('model', comboFormData.model);
-            if (comboFormData.state) fd.append('state', comboFormData.state);
-            if (comboFormData.city) fd.append('city', comboFormData.city);
             
-            if (comboImageFile) {
-                fd.append('image', comboImageFile);
+            // Append M2M fields
+            comboFormData.category.forEach(id => fd.append('category', id));
+            comboFormData.brand.forEach(id => fd.append('brand', id));
+            comboFormData.make.forEach(id => fd.append('make', id));
+            comboFormData.model.forEach(id => fd.append('model', id));
+            comboFormData.state.forEach(id => fd.append('state', id));
+            comboFormData.city.forEach(id => fd.append('city', id));
+            comboFormData.pincodes.forEach(id => fd.append('pincodes', id));
+
+
+            let comboResponse;
+            if (editingCombo) {
+                comboResponse = await api.put(`products/combos/${editingCombo.id}/`, fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+            } else {
+                comboResponse = await api.post('products/combos/', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
             }
 
-            await api.post('products/combos/', fd, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            const comboId = editingCombo ? editingCombo.id : comboResponse.data.id;
+
+            // Step 2: Upload images
+            const imagesToUpload = comboImages.filter(img => img.file);
+            if (imagesToUpload.length > 0) {
+                for (let i = 0; i < comboImages.length; i++) {
+                    const img = comboImages[i];
+                    if (img.file) {
+                        const imageFd = new FormData();
+                        imageFd.append('combo_product', comboId);
+                        imageFd.append('image', img.file);
+                        imageFd.append('is_primary', i === comboPrimaryImageIndex);
+
+                        await api.post('products/combo-product-images/', imageFd, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                        });
+                    }
+                }
+            }
+
+            // Step 3: Add specifications
+            const specsToSend = comboSpecRows.filter(r => r.key && r.value);
+            if (specsToSend.length > 0) {
+                for (const spec of specsToSend) {
+                    await api.post('products/combo-product-specifications/', {
+                        combo_product: comboId,
+                        key: spec.key,
+                        value: spec.value
+                    });
+                }
+            }
 
             setIsComboModalOpen(false);
-            setComboFormData({ 
-                name: '', slug: '', sku: '', price: '', inverter: '', battery: '', 
-                is_active: true, warranty: '', make: '', model: '', state: '', city: '' 
-            });
-            setComboImageFile(null);
-            setComboImagePreview(null);
             fetchData();
-            alert('Combo created successfully!');
+            alert(`Combo ${editingCombo ? 'updated' : 'created'} successfully!`);
         } catch (err) {
-            console.error('Combo Create Error:', err.response?.data);
-            const errorMsg = err.response?.data?.make?.[0] || err.response?.data?.model?.[0] || err.response?.data?.non_field_errors?.[0] || 'Failed to create combo. Check if Inverter and Battery are different.';
+            console.error('Combo Error:', err.response?.data);
+            const errorMsg = err.response?.data?.make?.[0] || err.response?.data?.model?.[0] || err.response?.data?.non_field_errors?.[0] || 'Operation failed. Check console.';
             alert(errorMsg);
         } finally {
             setComboSubmitting(false);
@@ -420,14 +623,14 @@ const ProductsPage = () => {
             }
             return { ...prev, images: updatedImages };
         });
-        
+
         // Reset file input so same files can be selected again if removed
         e.target.value = null;
     };
 
     const removeImage = async (indexToRemove) => {
         const imageToRemove = formData.images[indexToRemove];
-        
+
         if (imageToRemove.id) {
             if (window.confirm('Are you sure you want to delete this image?')) {
                 try {
@@ -472,16 +675,24 @@ const ProductsPage = () => {
         setSpecRows(updated);
     };
 
-    const getCategoryName = (id) => {
-        if (!id) return 'Uncategorized';
-        const cat = categories.find(c => c.id === parseInt(id));
-        return cat ? cat.name : 'Uncategorized';
+    const getCategoryName = (ids) => {
+        if (!ids || (Array.isArray(ids) && ids.length === 0)) return 'Uncategorized';
+        const idList = Array.isArray(ids) ? ids : [ids];
+        const names = idList.map(id => {
+            const cat = categories.find(c => c.id === parseInt(id));
+            return cat ? cat.name : null;
+        }).filter(Boolean);
+        return names.length > 0 ? names.join(', ') : 'Uncategorized';
     };
 
-    const getBrandName = (id) => {
-        if (!id) return 'Generic';
-        const brand = brands.find(b => b.id === parseInt(id));
-        return brand ? brand.name : 'Generic';
+    const getBrandName = (ids) => {
+        if (!ids || (Array.isArray(ids) && ids.length === 0)) return 'Generic';
+        const idList = Array.isArray(ids) ? ids : [ids];
+        const names = idList.map(id => {
+            const brand = brands.find(b => b.id === parseInt(id));
+            return brand ? brand.name : null;
+        }).filter(Boolean);
+        return names.length > 0 ? names.join(', ') : 'Generic';
     };
 
     const filteredProducts = products; // Backend already filters now
@@ -501,7 +712,7 @@ const ProductsPage = () => {
                             <button onClick={() => navigate('/vehicles')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Vehicles</button>
                             <button onClick={() => navigate('/locations')} className="glass action-btn" style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'var(--text-main)', border: '1px solid #ced4da', background: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>Manage Locations</button>
                             <button
-                                onClick={() => setIsComboModalOpen(true)}
+                                onClick={() => { setActiveTab('combos'); setIsComboModalOpen(true); }}
                                 className="glass action-btn"
                                 style={{ padding: '0.6rem 1rem', borderRadius: '10px', color: 'black', border: 'none', background: 'var(--grad-blue, #166fdc)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
                             >
@@ -563,6 +774,14 @@ const ProductsPage = () => {
                     Combo Packs ({combos.length})
                 </button>
             </div>
+
+            {error && (
+                <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', color: '#b91c1c' }}>
+                    <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                    <p style={{ fontWeight: 600 }}>{error}</p>
+                    <button onClick={() => fetchData()} style={{ marginLeft: 'auto', background: '#ef4444', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' }}>Retry</button>
+                </div>
+            )}
 
             {/* Toolbar & Filters */}
             <div className="glass" style={{ padding: '1.25rem', borderRadius: '16px', marginBottom: '1.5rem', background: '#f1f5f9', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid var(--glass-border)' }}>
@@ -641,7 +860,7 @@ const ProductsPage = () => {
                                             <Loader2 className="animate-spin" size={32} color="var(--primary-glow)" />
                                         </td>
                                     </tr>
-                                ) : filteredProducts.length === 0 ? (
+                                ) : (filteredProducts?.length || 0) === 0 ? (
                                     <tr>
                                         <td colSpan="7" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-dim)' }}>
                                             {searchTerm ? 'No products found matching your search.' : 'No products available in inventory.'}
@@ -745,7 +964,7 @@ const ProductsPage = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {combos.length === 0 ? (
+                                {(combos?.length || 0) === 0 ? (
                                     <tr>
                                         <td colSpan="5" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-dim)' }}>
                                             No combo packs available.
@@ -788,9 +1007,14 @@ const ProductsPage = () => {
                                         </td>
                                         <td style={{ padding: '1.25rem', textAlign: 'right' }}>
                                             {user?.role === 'ADMIN' && (
-                                                <button onClick={() => handleDeleteCombo(c.id)} className="action-btn delete" style={{ padding: '6px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', background: 'transparent', color: '#ef4444' }}>
-                                                    <Trash2 size={16} />
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => handleOpenComboModal(c)} className="action-btn" style={{ padding: '6px', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.2)', cursor: 'pointer', background: 'transparent', color: '#3b82f6' }}>
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteCombo(c.id)} className="action-btn delete" style={{ padding: '6px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer', background: 'transparent', color: '#ef4444' }}>
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>
@@ -848,46 +1072,54 @@ const ProductsPage = () => {
                                     <input value={formData.warranty} onChange={e => setFormData({ ...formData, warranty: e.target.value })} placeholder="e.g. 1 Year, 6 Months" />
                                 </div>
                                 <div className="input-group">
-                                    <label>Category</label>
-                                    <select required value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
-                                        <option value="">Select Category</option>
+                                    <label>Categories (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.category} onChange={e => setFormData({ ...formData, category: Array.from(e.target.selectedOptions, o => o.value) })}>
                                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
+                                    {RenderSelectedTags(formData.category, categories, 'category')}
                                 </div>
                                 <div className="input-group">
-                                    <label>Brand</label>
-                                    <select required value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value })}>
-                                        <option value="">Select Brand</option>
+                                    <label>Brands (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.brand} onChange={e => setFormData({ ...formData, brand: Array.from(e.target.selectedOptions, o => o.value) })}>
                                         {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                     </select>
+                                    {RenderSelectedTags(formData.brand, brands, 'brand')}
                                 </div>
                                 <div className="input-group">
-                                    <label>Vehicle Make</label>
-                                    <select value={formData.make} onChange={e => setFormData({ ...formData, make: e.target.value })}>
-                                        <option value="">Select Make</option>
+                                    <label>Vehicle Makes (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.make} onChange={e => setFormData({ ...formData, make: Array.from(e.target.selectedOptions, o => o.value) })}>
                                         {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                     </select>
+                                    {RenderSelectedTags(formData.make, makes, 'make')}
                                 </div>
                                 <div className="input-group">
-                                    <label>Vehicle Model</label>
-                                    <select value={formData.model} onChange={e => setFormData({ ...formData, model: e.target.value })}>
-                                        <option value="">Select Model</option>
+                                    <label>Vehicle Models (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.model} onChange={e => setFormData({ ...formData, model: Array.from(e.target.selectedOptions, o => o.value) })}>
                                         {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                                     </select>
+                                    {RenderSelectedTags(formData.model, models, 'model')}
                                 </div>
                                 <div className="input-group">
-                                    <label>State</label>
-                                    <select value={formData.state} onChange={e => setFormData({ ...formData, state: e.target.value })}>
-                                        <option value="">Select State</option>
+                                    <label>States (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.state} onChange={e => setFormData({ ...formData, state: Array.from(e.target.selectedOptions, o => o.value) })}>
                                         {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                     </select>
+                                    {RenderSelectedTags(formData.state, states, 'state')}
                                 </div>
                                 <div className="input-group">
-                                    <label>City</label>
-                                    <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
-                                        <option value="">Select City</option>
+                                    <label>Cities (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.city} onChange={e => setFormData({ ...formData, city: Array.from(e.target.selectedOptions, o => o.value) })}>
                                         {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
+                                    {RenderSelectedTags(formData.city, cities, 'city')}
+                                </div>
+                                <div className="input-group">
+                                    <label>Pincodes (Multi-select)</label>
+                                    <select multiple style={{ height: '100px' }} value={formData.pincodes} onChange={e => setFormData({ ...formData, pincodes: Array.from(e.target.selectedOptions, o => o.value) })} disabled={formData.city.length === 0}>
+                                        {availablePincodes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                    </select>
+                                    {RenderSelectedTags(formData.pincodes, availablePincodes, 'pincodes')}
+                                    {formData.city.length === 0 && <p style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Select cities first to see available pincodes.</p>}
                                 </div>
                                 <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '25px' }}>
                                     <input
@@ -1033,7 +1265,7 @@ const ProductsPage = () => {
                         borderRadius: '24px', maxHeight: '90vh', overflow: 'hidden', position: 'relative'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '2px solid var(--glass-border)', background: '#f8fafc' }}>
-                            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#000' }}>Create Combo Pack</h2>
+                            <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#000' }}>{editingCombo ? 'Edit Combo Pack' : 'Create Combo Pack'}</h2>
                             <button type="button" onClick={() => setIsComboModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
                                 <X size={24} />
                             </button>
@@ -1044,7 +1276,7 @@ const ProductsPage = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div className="input-group">
                                         <label>Combo Name</label>
-                                        <input required value={comboFormData.name} onChange={e => setComboFormData({ ...comboFormData, name: e.target.value, slug: slugify(e.target.value) })} placeholder="e.g. Inverter + 150Ah Battery" />
+                                        <input required value={comboFormData.name} onChange={e => handleComboNameChange(e.target.value)} placeholder="e.g. Inverter + 150Ah Battery" />
                                     </div>
                                     <div className="input-group">
                                         <label>Slug (URL key)</label>
@@ -1088,38 +1320,92 @@ const ProductsPage = () => {
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div className="input-group">
-                                        <label>Vehicle Make</label>
-                                        <select value={comboFormData.make} onChange={e => setComboFormData({ ...comboFormData, make: e.target.value })}>
-                                            <option value="">Select Make</option>
-                                            {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                        </select>
+                                        <label>Special Price (₹) - Optional</label>
+                                        <input type="number" step="0.01" value={comboFormData.special_price} onChange={e => setComboFormData({ ...comboFormData, special_price: e.target.value })} />
                                     </div>
                                     <div className="input-group">
-                                        <label>Vehicle Model</label>
-                                        <select value={comboFormData.model} onChange={e => setComboFormData({ ...comboFormData, model: e.target.value })}>
-                                            <option value="">Select Model</option>
-                                            {(makes.find(m => m.id == comboFormData.make)?.models || models).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                                        </select>
+                                        <label>Description</label>
+                                        <textarea rows="2" value={comboFormData.description} onChange={e => setComboFormData({ ...comboFormData, description: e.target.value })} />
                                     </div>
                                 </div>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div className="input-group">
-                                        <label>State</label>
-                                        <select value={comboFormData.state} onChange={e => setComboFormData({ ...comboFormData, state: e.target.value })}>
-                                            <option value="">Select State</option>
-                                            {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        <label>Categories (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.category} onChange={e => setComboFormData({ ...comboFormData, category: Array.from(e.target.selectedOptions, o => o.value) })}>
+                                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
+                                        {RenderSelectedTags(comboFormData.category, categories, 'category', true)}
                                     </div>
                                     <div className="input-group">
-                                        <label>City</label>
-                                        <select value={comboFormData.city} onChange={e => setComboFormData({ ...comboFormData, city: e.target.value })}>
-                                            <option value="">Select City</option>
-                                            {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        <label>Brands (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.brand} onChange={e => setComboFormData({ ...comboFormData, brand: Array.from(e.target.selectedOptions, o => o.value) })}>
+                                            {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                         </select>
+                                        {RenderSelectedTags(comboFormData.brand, brands, 'brand', true)}
                                     </div>
                                 </div>
-                                
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>Vehicle Makes (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.make} onChange={e => setComboFormData({ ...comboFormData, make: Array.from(e.target.selectedOptions, o => o.value) })}>
+                                            {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                        </select>
+                                        {RenderSelectedTags(comboFormData.make, makes, 'make', true)}
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Vehicle Models (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.model} onChange={e => setComboFormData({ ...comboFormData, model: Array.from(e.target.selectedOptions, o => o.value) })}>
+                                            {models.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                        </select>
+                                        {RenderSelectedTags(comboFormData.model, models, 'model', true)}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>States (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.state} onChange={e => setComboFormData({ ...comboFormData, state: Array.from(e.target.selectedOptions, o => o.value) })}>
+                                            {states.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </select>
+                                        {RenderSelectedTags(comboFormData.state, states, 'state', true)}
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Cities (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.city} onChange={e => setComboFormData({ ...comboFormData, city: Array.from(e.target.selectedOptions, o => o.value) })}>
+                                            {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                        {RenderSelectedTags(comboFormData.city, cities, 'city', true)}
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Pincodes (Multi-select)</label>
+                                        <select multiple style={{ height: '100px' }} value={comboFormData.pincodes} onChange={e => setComboFormData({ ...comboFormData, pincodes: Array.from(e.target.selectedOptions, o => o.value) })} disabled={comboFormData.city.length === 0}>
+                                            {availablePincodes.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                        {RenderSelectedTags(comboFormData.pincodes, availablePincodes, 'pincodes', true)}
+                                        {comboFormData.city.length === 0 && <p style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Select cities first to see available pincodes.</p>}
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexDirection: 'row' }}>
+                                        <input
+                                            type="checkbox"
+                                            id="combo_exchange_available"
+                                            checked={comboFormData.exchange_available}
+                                            onChange={e => setComboFormData({ ...comboFormData, exchange_available: e.target.checked })}
+                                        />
+                                        <label htmlFor="combo_exchange_available" style={{ margin: 0 }}>Exchange Available</label>
+                                    </div>
+                                    {comboFormData.exchange_available && (
+                                        <div className="input-group">
+                                            <label>Exchange Discount (₹)</label>
+                                            <input type="number" value={comboFormData.exchange_discount} onChange={e => setComboFormData({ ...comboFormData, exchange_discount: e.target.value })} />
+                                        </div>
+                                    )}
+                                </div>
+
                                 {comboFormData.inverter && comboFormData.battery && (
                                     <div style={{ padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
                                         <div style={{ fontSize: '0.85rem', color: '#1d4ed8', fontWeight: 700 }}>Virtual Combo Stock Available: </div>
@@ -1133,39 +1419,101 @@ const ProductsPage = () => {
                                 )}
 
                                 <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexDirection: 'row' }}>
-                                    <input 
-                                        type="checkbox" 
-                                        id="combo_is_active" 
-                                        checked={comboFormData.is_active} 
-                                        onChange={e => setComboFormData({ ...comboFormData, is_active: e.target.checked })} 
+                                    <input
+                                        type="checkbox"
+                                        id="combo_is_active"
+                                        checked={comboFormData.is_active}
+                                        onChange={e => setComboFormData({ ...comboFormData, is_active: e.target.checked })}
                                     />
                                     <label htmlFor="combo_is_active" style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Combo Active/Visible</label>
                                 </div>
 
-                                <div className="input-group">
-                                    <label>Combo Image</label>
-                                    <input type="file" onChange={handleComboImageUpload} />
-                                    {comboImagePreview && (
-                                        <div style={{ position: 'relative', width: '100px', height: '100px', marginTop: '10px' }}>
-                                            <img
-                                                src={comboImagePreview}
-                                                alt="Combo preview"
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={removeComboImage}
-                                                style={{
-                                                    position: 'absolute', top: '-5px', right: '-5px',
-                                                    background: 'white', color: '#ef4444', border: '1px solid #ef4444',
-                                                    borderRadius: '50%', width: '20px', height: '20px',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    cursor: 'pointer', padding: 0
-                                                }}>
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    )}
+                                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                                    <label>Combo Images</label>
+                                    <input type="file" multiple onChange={handleComboImageUpload} />
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                                        {comboImages.map((img, idx) => (
+                                            <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                                                <img
+                                                    src={img.url}
+                                                    alt="preview"
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '8px',
+                                                        border: idx === comboPrimaryImageIndex ? '2px solid var(--primary-glow)' : 'none'
+                                                    }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeComboImage(idx)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-5px', right: '-5px',
+                                                        background: 'white',
+                                                        color: '#ef4444',
+                                                        border: '1px solid #ef4444',
+                                                        borderRadius: '50%',
+                                                        width: '20px', height: '20px',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        cursor: 'pointer', padding: 0, zIndex: 10
+                                                    }}>
+                                                    <X size={12} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setComboPrimaryImageIndex(idx)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        bottom: 0, left: 0, right: 0,
+                                                        fontSize: '0.6rem',
+                                                        background: idx === comboPrimaryImageIndex ? 'var(--primary-glow)' : 'rgba(255,255,255,0.9)',
+                                                        color: idx === comboPrimaryImageIndex ? 'white' : 'black',
+                                                        border: 'none',
+                                                        padding: '2px',
+                                                        cursor: 'pointer',
+                                                        borderBottomLeftRadius: '8px',
+                                                        borderBottomRightRadius: '8px'
+                                                    }}>
+                                                    {idx === comboPrimaryImageIndex ? 'Primary' : 'Set Primary'}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                        <label style={{ margin: 0 }}>Combo Specifications</label>
+                                        <button type="button" onClick={handleAddComboSpecRow} style={{ padding: '4px 12px', borderRadius: '6px', background: 'var(--primary-glow)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}>+ Add Row</button>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {comboSpecRows.map((row, idx) => (
+                                            <div key={idx} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                <input
+                                                    placeholder="Feature (e.g. Battery Life)"
+                                                    style={{ flex: 1 }}
+                                                    value={row.key}
+                                                    onChange={(e) => handleComboSpecChange(idx, 'key', e.target.value)}
+                                                />
+                                                <input
+                                                    placeholder="Value (e.g. 5 Years)"
+                                                    style={{ flex: 1 }}
+                                                    value={row.value}
+                                                    onChange={(e) => handleComboSpecChange(idx, 'value', e.target.value)}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeComboSpecRow(idx)}
+                                                    style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
+                                                    disabled={comboSpecRows.length === 1}
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1175,7 +1523,7 @@ const ProductsPage = () => {
                             <button type="submit" disabled={comboSubmitting} style={{
                                 padding: '0.75rem 2rem', borderRadius: '12px', background: 'var(--grad-blue, #3b82f6)', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
                             }}>
-                                {comboSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Create Combo
+                                {comboSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} {editingCombo ? 'Update Combo' : 'Create Combo'}
                             </button>
                         </div>
                     </form>

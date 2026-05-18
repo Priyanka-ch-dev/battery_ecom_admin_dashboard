@@ -127,7 +127,7 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>CUSTOMER PAYMENT</span>
-                                            <span style={{ 
+                                            <span style={{
                                                 fontSize: '0.7rem', fontWeight: 900, padding: '4px 10px', borderRadius: '12px',
                                                 background: (order?.customer_payment_status === 'PAID') ? '#22c55e15' : '#eab30815',
                                                 color: (order?.customer_payment_status === 'PAID') ? '#22c55e' : '#eab308',
@@ -138,7 +138,7 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8' }}>DELIVERY SUBMISSION</span>
-                                            <span style={{ 
+                                            <span style={{
                                                 fontSize: '0.7rem', fontWeight: 900, padding: '4px 10px', borderRadius: '12px',
                                                 background: (order?.delivery_payment_status === 'VERIFIED') ? '#10b98115' : '#f59e0b15',
                                                 color: (order?.delivery_payment_status === 'VERIFIED') ? '#10b981' : '#f59e0b',
@@ -185,7 +185,7 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                                                 <td style={{ padding: '16px 20px' }}>
                                                     <div style={{ fontWeight: 700, color: '#000' }}>{item.product_name}</div>
                                                     <div style={{ fontSize: '0.7rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                    <Store size={10} /> {item.seller_name}
+                                                        <Store size={10} /> {item.seller_name}
                                                     </div>
                                                     {item.is_exchange && (
                                                         <div style={{ fontSize: '0.65rem', color: '#3b82f6', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -242,7 +242,7 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                                                     <span style={{ fontWeight: 700, color: '#000' }}>Net Earning:</span>
                                                     <span style={{ fontWeight: 900, color: '#22c55e', marginLeft: '8px' }}>₹{earning.net_earning.toFixed(2)}</span>
                                                 </div>
-                                                <span style={{ 
+                                                <span style={{
                                                     fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: '4px',
                                                     background: earning.settlement_status === 'SETTLED' ? '#10b98115' : '#eab30815',
                                                     color: earning.settlement_status === 'SETTLED' ? '#10b981' : '#eab308',

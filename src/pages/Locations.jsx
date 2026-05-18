@@ -61,7 +61,13 @@ const LocationsPage = () => {
     const handleCitySubmit = async (e) => {
         e.preventDefault();
         try {
-            const payload = { ...cityFormData, state: selectedState.id };
+            const pins = cityFormData.pincode_list_str ? cityFormData.pincode_list_str.split(',').map(p => p.trim()).filter(p => p !== "") : [];
+            const payload = { 
+                name: cityFormData.name, 
+                state: selectedState.id,
+                pincode_list: pins
+            };
+            
             if (editingItem) {
                 await api.put(`locations/cities/${editingItem.id}/`, payload);
             } else {
@@ -142,7 +148,7 @@ const LocationsPage = () => {
                         <span style={{ fontWeight: 700 }}>Cities {selectedState ? `in ${selectedState.name}` : ''}</span>
                         {selectedState && (
                             <button 
-                                onClick={() => { setEditingItem(null); setCityFormData({ name: '', state: selectedState.id }); setIsCityModalOpen(true); }}
+                                onClick={() => { setEditingItem(null); setCityFormData({ name: '', state: selectedState.id, pincode_list_str: '' }); setIsCityModalOpen(true); }}
                                 style={{ padding: '4px 12px', borderRadius: '6px', background: '#3b82f6', color: 'white', border: 'none', fontSize: '0.8rem', cursor: 'pointer' }}
                             >
                                 + Add City
@@ -155,14 +161,25 @@ const LocationsPage = () => {
                         ) : cities.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-dim)' }}>No cities found for this state.</div>
                         ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
                                 {cities.map(city => (
-                                    <div key={city.id} className="glass" style={{ padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 600 }}>{city.name}</span>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={() => { setEditingItem(city); setCityFormData({ name: city.name, state: selectedState.id }); setIsCityModalOpen(true); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}><Edit2 size={14} /></button>
-                                            <button onClick={() => handleDeleteCity(city.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                    <div key={city.id} className="glass" style={{ padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 700 }}>{city.name}</span>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button onClick={() => { setEditingItem(city); setCityFormData({ name: city.name, state: selectedState.id, pincode_list_str: city.pincodes.map(p => p.pincode).join(', ') }); setIsCityModalOpen(true); }} style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer' }}><Edit2 size={14} /></button>
+                                                <button onClick={() => handleDeleteCity(city.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                            </div>
                                         </div>
+                                        {city.pincodes && city.pincodes.length > 0 ? (
+                                            <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                {city.pincodes.map(p => (
+                                                    <span key={p.id} style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>{p.pincode}</span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <span style={{ fontSize: '0.75rem', color: '#cbd5e1', fontStyle: 'italic' }}>No pincodes</span>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -191,11 +208,21 @@ const LocationsPage = () => {
             {/* City Modal */}
             {isCityModalOpen && (
                 <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <form onSubmit={handleCitySubmit} className="glass" style={{ width: '400px', padding: '2rem', borderRadius: '20px', background: 'white' }}>
+                    <form onSubmit={handleCitySubmit} className="glass" style={{ width: '450px', padding: '2rem', borderRadius: '20px', background: 'white' }}>
                         <h2 style={{ marginBottom: '1.5rem' }}>{editingItem ? 'Edit City' : 'Add City'}</h2>
-                        <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                        <div className="input-group" style={{ marginBottom: '1.25rem' }}>
                             <label>City Name</label>
                             <input required value={cityFormData.name} onChange={e => setCityFormData({ ...cityFormData, name: e.target.value })} placeholder="e.g. Mumbai" />
+                        </div>
+                        <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                            <label>Pincodes (Comma separated)</label>
+                            <textarea 
+                                value={cityFormData.pincode_list_str} 
+                                onChange={e => setCityFormData({ ...cityFormData, pincode_list_str: e.target.value })} 
+                                placeholder="e.g. 400001, 400002"
+                                style={{ minHeight: '80px', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--glass-border)', width: '100%', fontFamily: 'inherit' }}
+                            />
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '4px' }}>Add multiple pincodes separated by commas.</p>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                             <button type="button" onClick={() => setIsCityModalOpen(false)} className="action-btn">Cancel</button>

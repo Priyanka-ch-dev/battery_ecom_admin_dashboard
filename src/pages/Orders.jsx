@@ -25,9 +25,9 @@ const OrdersPage = () => {
 
             const [ordersRes, sellersRes] = await Promise.all([
                 api.get(query),
-                api.get('sellers/?status=APPROVED')
+                api.get('sellers/profiles/?status=APPROVED')
             ]);
-            
+
             setOrders(ordersRes.data.results || ordersRes.data);
             setSellers(sellersRes.data.results || sellersRes.data);
         } catch (err) {
@@ -70,12 +70,22 @@ const OrdersPage = () => {
 
     const getStatusColor = (status) => {
         switch (status) {
+            case 'ASSIGNED': return '#2563eb';
+            case 'SCHEDULED': return '#7c3aed';
+            case 'INSTALLATION_STARTED': return '#10b981';
+            case 'IN_PROGRESS': return '#d97706';
+            case 'CONTINUED_TOMORROW': return '#e53e3e';
+            case 'RESUMED': return '#3182ce';
+            case 'COMPLETED': return '#10b981';
+            case 'AWAITING_CONFIRMATION': return '#d97706';
+            case 'VERIFIED': return '#10b981';
+            case 'CLOSED': return '#6b7280';
+            
             case 'DELIVERED': return '#22c55e';
             case 'PENDING': return '#eab308';
             case 'CANCELLED': return '#ef4444';
-            case 'ASSIGNED': return '#3b82f6';
             case 'SHIPPED': return '#8b5cf6';
-            default: return 'var(--text-dim)';
+            default: return '#94a3b8';
         }
     };
 
@@ -90,35 +100,40 @@ const OrdersPage = () => {
             <div className="glass" style={{ padding: '1rem', borderRadius: '16px', marginBottom: '1.5rem', background: '#f1f5f9', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', border: '1px solid var(--glass-border)' }}>
                 <div style={{ flex: 1, minWidth: '300px', display: 'flex', alignItems: 'center', gap: '10px', background: '#ffffff', padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                     <Search size={18} color="var(--text-main)" />
-                    <input 
-                      type="text" 
-                      placeholder="Search by ID or customer email..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontSize: '0.9rem', fontWeight: 500 }}
+                    <input
+                        type="text"
+                        placeholder="Search by ID or customer email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontSize: '0.9rem', fontWeight: 500 }}
                     />
                 </div>
-                
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  style={{ padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: '#ffffff', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.9rem', outline: 'none', minWidth: '180px' }}
+
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    style={{ padding: '10px 15px', borderRadius: '12px', border: '1px solid var(--glass-border)', background: '#ffffff', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.9rem', outline: 'none', minWidth: '180px' }}
                 >
                     <option value="">All Statuses</option>
                     <option value="PENDING">PENDING</option>
                     <option value="CONFIRMED">CONFIRMED</option>
                     <option value="ASSIGNED">ASSIGNED</option>
-                    <option value="SHIPPED">SHIPPED</option>
-                    <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
-                    <option value="DELIVERED">DELIVERED</option>
+                    <option value="SCHEDULED">SCHEDULED</option>
+                    <option value="INSTALLATION_STARTED">INSTALLATION STARTED</option>
+                    <option value="IN_PROGRESS">IN PROGRESS</option>
+                    <option value="CONTINUED_TOMORROW">CONTINUED TOMORROW</option>
+                    <option value="RESUMED">RESUMED</option>
                     <option value="COMPLETED">COMPLETED</option>
+                    <option value="AWAITING_CONFIRMATION">AWAITING CONFIRMATION</option>
+                    <option value="VERIFIED">VERIFIED</option>
+                    <option value="CLOSED">CLOSED</option>
                     <option value="CANCELLED">CANCELLED</option>
                 </select>
 
                 {(searchTerm || statusFilter) && (
-                    <button 
-                      onClick={() => { setSearchTerm(''); setStatusFilter(''); }}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                    <button
+                        onClick={() => { setSearchTerm(''); setStatusFilter(''); }}
+                        style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
                     >
                         Clear Filters
                     </button>
@@ -151,13 +166,13 @@ const OrdersPage = () => {
                                     </td>
                                 </tr>
                             ) : orders.map((order) => (
-                                <tr key={order.id} 
+                                <tr key={order.id}
                                     onClick={() => navigate(`/orders/${order.id}`)}
-                                    style={{ borderBottom: '1px solid var(--glass-border)', cursor: 'pointer' }} 
+                                    style={{ borderBottom: '1px solid var(--glass-border)', cursor: 'pointer' }}
                                     className="table-row"
                                 >
                                     <td style={{ padding: '1.25rem' }}>
-                                        <div 
+                                        <div
                                             style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}
                                             className="hover-text-red"
                                         >
@@ -177,12 +192,12 @@ const OrdersPage = () => {
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 600 }}>via {order.payment_method?.toUpperCase() || 'COD'}</div>
                                     </td>
                                     <td style={{ padding: '1.25rem' }} onClick={(e) => e.stopPropagation()}>
-                                        <select 
+                                        <select
                                             value={order.status}
                                             onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                                            style={{ 
-                                                padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', 
-                                                background: `${getStatusColor(order.status)}22`, 
+                                            style={{
+                                                padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem',
+                                                background: `${getStatusColor(order.status)}22`,
                                                 color: getStatusColor(order.status),
                                                 fontWeight: 700,
                                                 border: `1px solid ${getStatusColor(order.status)}44`,
@@ -193,31 +208,37 @@ const OrdersPage = () => {
                                             <option value="PENDING">PENDING</option>
                                             <option value="CONFIRMED">CONFIRMED</option>
                                             <option value="ASSIGNED">ASSIGNED</option>
-                                            <option value="SHIPPED">SHIPPED</option>
-                                            <option value="OUT_FOR_DELIVERY">OUT FOR DELIVERY</option>
-                                            <option value="DELIVERED">DELIVERED</option>
+                                            <option value="SCHEDULED">SCHEDULED</option>
+                                            <option value="INSTALLATION_STARTED">INSTALLATION_STARTED</option>
+                                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                            <option value="CONTINUED_TOMORROW">CONTINUED_TOMORROW</option>
+                                            <option value="RESUMED">RESUMED</option>
+                                            <option value="COMPLETED">COMPLETED</option>
+                                            <option value="AWAITING_CONFIRMATION">AWAITING_CONFIRMATION</option>
+                                            <option value="VERIFIED">VERIFIED</option>
+                                            <option value="CLOSED">CLOSED</option>
                                             <option value="CANCELLED">CANCELLED</option>
                                         </select>
                                     </td>
                                     <td style={{ padding: '1.25rem', minWidth: '240px' }} onClick={(e) => e.stopPropagation()}>
                                         {order.status === 'PENDING' || order.status === 'CONFIRMED' || order.status === 'ASSIGNED' ? (
                                             <div style={{ position: 'relative', width: '100%' }}>
-                                                <select 
-                                                  value={order.delivery_person || ''}
-                                                  onChange={(e) => handleAssignSeller(order.id, e.target.value)}
-                                                  style={{ 
-                                                    width: '100%', 
-                                                    padding: '10px 14px', 
-                                                    background: 'rgba(255,255,255,0.08)', 
-                                                    border: '1px solid var(--glass-border)', 
-                                                    borderRadius: '12px',
-                                                    color: 'black',
-                                                    fontSize: '0.9rem',
-                                                    appearance: 'none',
-                                                    cursor: 'pointer',
-                                                    outline: 'none',
-                                                    transition: 'all 0.2s ease'
-                                                  }}
+                                                <select
+                                                    value={order.delivery_person || ''}
+                                                    onChange={(e) => handleAssignSeller(order.id, e.target.value)}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '10px 14px',
+                                                        background: 'rgba(255,255,255,0.08)',
+                                                        border: '1px solid var(--glass-border)',
+                                                        borderRadius: '12px',
+                                                        color: 'black',
+                                                        fontSize: '0.9rem',
+                                                        appearance: 'none',
+                                                        cursor: 'pointer',
+                                                        outline: 'none',
+                                                        transition: 'all 0.2s ease'
+                                                    }}
                                                 >
                                                     <option value="">Choose Seller...</option>
                                                     {sellers.map(seller => (
@@ -245,9 +266,9 @@ const OrdersPage = () => {
 
             {/* Order Detail Modal */}
             {selectedOrderId && (
-                <OrderDetailModal 
-                    orderId={selectedOrderId} 
-                    onClose={() => setSelectedOrderId(null)} 
+                <OrderDetailModal
+                    orderId={selectedOrderId}
+                    onClose={() => setSelectedOrderId(null)}
                 />
             )}
         </div>

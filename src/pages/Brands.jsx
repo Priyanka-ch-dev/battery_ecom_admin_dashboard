@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, ArrowLeft, Loader2, Save, X, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
@@ -12,6 +12,7 @@ const BrandsPage = () => {
     
     const slugify = (text) => {
         return text.toString().toLowerCase()
+            .trim()
             .replace(/\s+/g, '-')
             .replace(/[^\w\-]+/g, '')
             .replace(/\-\-+/g, '-')
@@ -19,11 +20,19 @@ const BrandsPage = () => {
             .replace(/-+$/, '');
     };
 
-    const handleNameChange = (val) => {
+    const handleNameChange = (e) => {
+        const val = e.target.value;
         setFormData({
             ...formData,
             name: val,
             slug: slugify(val)
+        });
+    };
+
+    const handleSlugChange = (e) => {
+        setFormData({
+            ...formData,
+            slug: e.target.value
         });
     };
 
@@ -58,13 +67,22 @@ const BrandsPage = () => {
             setFormData({ name: '', slug: '' });
             setLogo(null);
             fetchBrands();
+            alert('Brand created successfully!');
         } catch (err) {
-            alert('Failed to create brand. Check if slug is unique.');
+            console.error('Brand Create Error:', err.response?.data);
+            const errorData = err.response?.data;
+            let errorMessage = 'Failed to create brand.';
+            if (errorData) {
+                errorMessage = typeof errorData === 'object' 
+                    ? Object.entries(errorData).map(([key, val]) => `${key}: ${val}`).join('\n')
+                    : JSON.stringify(errorData);
+            }
+            alert(errorMessage);
         }
     };
 
     const handleDelete = async (id) => {
-        if (window.confirm('Delete this brand? Products using it will be marked generic.')) {
+        if (window.confirm('Delete this brand?')) {
             try {
                 await api.delete(`products/brands/${id}/`);
                 fetchBrands();
@@ -75,7 +93,7 @@ const BrandsPage = () => {
     };
 
     return (
-        <div>
+        <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                 <button onClick={() => navigate('/products')} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                     <ArrowLeft size={24} />
@@ -85,81 +103,62 @@ const BrandsPage = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
                 {/* Create Form */}
-                <div className="glass" style={{ padding: '2rem', borderRadius: '12px', height: 'fit-content', background: '#fff', border: '1px solid var(--glass-border)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontWeight: 800, color: '#000' }}>Add New Brand</h3>
+                <div style={{ padding: '2rem', borderRadius: '12px', background: '#fff', border: '1px solid #eee', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontWeight: 800 }}>Add New Brand</h3>
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        <div className="input-group">
-                            <label>Brand Name</label>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '8px' }}>Brand Name</label>
                             <input 
                                 required 
                                 value={formData.name} 
-                                onChange={e => handleNameChange(e.target.value)}
+                                onChange={handleNameChange}
                                 placeholder="e.g. Exide"
-                                style={{
-                                    padding: '12px',
-                                    background: '#fff',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '12px',
-                                    color: 'var(--text-main)'
-                                }}
+                                style={{ width: '100%', padding: '12px', border: '1px solid #ced4da', borderRadius: '12px' }}
                             />
                         </div>
-                        <div className="input-group">
-                            <label>Slug (URL key)</label>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '8px' }}>System Slug (URL Key)</label>
                             <input 
                                 required 
                                 value={formData.slug} 
-                                onChange={e => setFormData({...formData, slug: e.target.value})}
-                                style={{
-                                    padding: '12px',
-                                    background: '#fff',
-                                    border: '1px solid #ced4da',
-                                    borderRadius: '12px',
-                                    color: 'var(--text-main)'
-                                }}
+                                onChange={handleSlugChange}
+                                style={{ width: '100%', padding: '12px', border: '1px solid #ced4da', borderRadius: '12px', background: '#f8f9fa' }}
                             />
                         </div>
-                        <div className="input-group">
-                            <label>Logo (Optional)</label>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', marginBottom: '8px' }}>Logo (Optional)</label>
                             <input 
                                 type="file"
                                 accept="image/*"
                                 onChange={e => setLogo(e.target.files[0])}
-                                style={{ fontSize: '0.85rem' }}
                             />
                         </div>
-                        <button type="submit" className="glass" style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: 'var(--red-main)', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
-                            <Plus size={18} /> Add Brand
+                        <button type="submit" style={{ background: '#d32f2f', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                            Add Brand
                         </button>
                     </form>
                 </div>
 
                 {/* List Table */}
-                <div className="glass" style={{ borderRadius: '12px', overflow: 'hidden', background: '#fff', border: '1px solid var(--glass-border)' }}>
+                <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #eee', overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ background: '#f8fafc', borderBottom: '2px solid var(--glass-border)' }}>
+                        <thead style={{ background: '#f8fafc' }}>
                             <tr>
-                                <th style={{ padding: '1.25rem', textAlign: 'left', fontWeight: 800, color: '#000' }}>Brand</th>
-                                <th style={{ padding: '1.25rem', textAlign: 'left', fontWeight: 800, color: '#000' }}>System Slug</th>
-                                <th style={{ padding: '1.25rem', textAlign: 'right', fontWeight: 800, color: '#000' }}>Actions</th>
+                                <th style={{ padding: '1.25rem', textAlign: 'left' }}>Brand</th>
+                                <th style={{ padding: '1.25rem', textAlign: 'left' }}>Slug</th>
+                                <th style={{ padding: '1.25rem', textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="3" style={{ padding: '4rem', textAlign: 'center' }}><Loader2 className="animate-spin" color="var(--primary-glow)" /></td></tr>
-                            ) : brands.length === 0 ? (
-                                <tr><td colSpan="3" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-dim)' }}>No brands found.</td></tr>
+                                <tr><td colSpan="3" style={{ padding: '2rem', textAlign: 'center' }}><Loader2 className="animate-spin" /></td></tr>
                             ) : brands.map(brand => (
-                                <tr key={brand.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                                    <td style={{ padding: '1.25rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <div style={{ width: '32px', height: '32px', borderRadius: '4px', background: 'rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                {brand.logo ? <img src={brand.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageIcon size={14} color="var(--text-dim)" />}
-                                            </div>
-                                            <span style={{ fontWeight: 600 }}>{brand.name}</span>
-                                        </div>
+                                <tr key={brand.id} style={{ borderBottom: '1px solid #eee' }}>
+                                    <td style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        {brand.logo ? <img src={brand.logo} style={{ width: '30px', height: '30px', objectFit: 'contain' }} /> : <ImageIcon size={20} />}
+                                        <span style={{ fontWeight: 600 }}>{brand.name}</span>
                                     </td>
-                                    <td style={{ padding: '1.25rem', color: 'var(--text-dim)', fontSize: '0.875rem' }}>{brand.slug}</td>
+                                    <td style={{ padding: '1.25rem', color: '#666' }}>{brand.slug}</td>
                                     <td style={{ padding: '1.25rem', textAlign: 'right' }}>
                                         <button onClick={() => handleDelete(brand.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
                                             <Trash2 size={18} />
@@ -171,13 +170,6 @@ const BrandsPage = () => {
                     </table>
                 </div>
             </div>
-
-            <style>
-                {`
-                    .input-group { display: flex; flex-direction: column; gap: 8px; }
-                    .input-group label { font-size: 0.8rem; color: var(--text-dim); font-weight: 500; }
-                `}
-            </style>
         </div>
     );
 };

@@ -85,16 +85,16 @@ const DashboardPage = () => {
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isFallback, setIsFallback] = useState(false);
+  const [timeFilter, setTimeFilter] = useState('week');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const [statsRes, ordersRes, sellersRes] = await Promise.all([
-          api.get('reports/summary/'),
+          api.get(`reports/summary/?filter=${timeFilter}`),
           api.get('orders/?ordering=-created_at'),
-          api.get('sellers/?status=APPROVED')
+          api.get('sellers/profiles/?status=APPROVED')
         ]);
 
         setData(statsRes.data);
@@ -111,7 +111,7 @@ const DashboardPage = () => {
     };
 
     fetchData();
-  }, []);
+  }, [timeFilter]);
 
   const handleAssignSeller = async (orderId, sellerId) => {
     if (!sellerId) return;
@@ -361,7 +361,26 @@ const DashboardPage = () => {
         <div className="glass" style={{ padding: '2.5rem', borderRadius: '16px', gridColumn: 'span 2', background: '#fff', border: '1px solid var(--glass-border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#000' }}>User Acquisition Strategy</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  color: '#000',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="day">Daily</option>
+                <option value="week">Weekly</option>
+                <option value="month">Monthly</option>
+              </select>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, background: '#f8fafc', padding: '4px 12px', borderRadius: '20px', border: '1px solid #e2e8f0', color: '#64748b' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#388e3c' }}></div>
                 Active Growth
