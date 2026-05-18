@@ -24,8 +24,9 @@ import VehiclesPage from './pages/Vehicles';
 import LocationsPage from './pages/Locations';
 import ServiceableCitiesPage from './pages/ServiceableCities';
 import InvoicesPage from './pages/Invoices';
+import LeadsPage from './pages/Leads';
 
-import { LayoutDashboard, ShoppingBag, Box, CreditCard, Wrench, MessageSquare, LogOut, Users, Battery, Menu, X, Store, Search, Tag, Phone, PanelLeft, BatteryCharging, BatteryFull, BatteryIcon, ChevronLeft, ChevronRight, IndianRupee, MapPin, FileText } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Box, CreditCard, Wrench, MessageSquare, LogOut, Users, Battery, Menu, X, Store, Search, Tag, Phone, PanelLeft, BatteryCharging, BatteryFull, BatteryIcon, ChevronLeft, ChevronRight, IndianRupee, MapPin, FileText, UserPlus } from 'lucide-react';
 
 const SidebarItem = ({ to, icon: Icon, label, isCollapsed, onClick }) => {
   const location = useLocation();
@@ -109,6 +110,7 @@ const Sidebar = ({ isCollapsed, isMobile, toggleSidebar }) => {
           <SidebarItem to="/installations" icon={Wrench} label="Installations" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/contact-settings" icon={Phone} label="Contact Settings" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
           <SidebarItem to="/service-availability" icon={MapPin} label="Service Areas" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
+          <SidebarItem to="/leads" icon={UserPlus} label="Lead Generation" isCollapsed={isCollapsed && !isMobile} onClick={() => isMobile && toggleSidebar()} />
         </nav>
       </div>
       {isMobile && !isCollapsed && <div className="overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 150 }} onClick={toggleSidebar}></div>}
@@ -204,6 +206,7 @@ function App() {
             <Route path="/vehicles" element={<Layout><VehiclesPage /></Layout>} />
             <Route path="/locations" element={<Layout><LocationsPage /></Layout>} />
             <Route path="/service-availability" element={<Layout><ServiceableCitiesPage /></Layout>} />
+            <Route path="/leads" element={<Layout><LeadsPage /></Layout>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
