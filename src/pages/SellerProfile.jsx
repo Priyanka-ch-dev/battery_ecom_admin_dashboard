@@ -81,10 +81,10 @@ const SellerProfilePage = () => {
                             <span>•</span>
                             <span style={{ 
                                 padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800,
-                                background: seller.status === 'APPROVED' ? '#ecfdf5' : '#fffbeb',
-                                color: seller.status === 'APPROVED' ? '#059669' : '#d97706'
+                                background: seller.status === 'APPROVED' ? '#ecfdf5' : (seller.status === 'PENDING' && seller.has_been_approved ? '#fef3c7' : '#fffbeb'),
+                                color: seller.status === 'APPROVED' ? '#059669' : (seller.status === 'PENDING' && seller.has_been_approved ? '#d97706' : '#d97706')
                             }}>
-                                {seller.status}
+                                {seller.status === 'PENDING' && seller.has_been_approved ? 'RE-VERIFICATION PENDING' : seller.status}
                             </span>
                         </div>
                     </div>

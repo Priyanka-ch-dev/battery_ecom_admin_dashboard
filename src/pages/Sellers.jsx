@@ -247,7 +247,11 @@ const SellersPage = () => {
                                     </td>
                                     <td style={{ padding: '1.25rem' }}>
                                         {((seller.status || '').toUpperCase() === "PENDING" || !seller.status) && (
-                                            <span className="status pending">Pending</span>
+                                            seller.has_been_approved ? (
+                                                <span className="status pending" style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #f59e0b' }}>Re-verification Pending</span>
+                                            ) : (
+                                                <span className="status pending">Pending</span>
+                                            )
                                         )}
                                         {seller.status?.toUpperCase() === "APPROVED" && (
                                             <span className="status approved">Approved</span>
