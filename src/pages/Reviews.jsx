@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, Star, CheckCircle, Trash2, Loader2, AlertCircle, Clock, Search } from 'lucide-react';
+import { MessageSquare, Star, CheckCircle, Trash2, Loader2, AlertCircle, Clock, Search, X } from 'lucide-react';
 import api from '../services/api';
 
 const ReviewsPage = () => {
@@ -15,7 +15,7 @@ const ReviewsPage = () => {
             let url = 'reviews/';
             const params = [];
             if (search) params.push(`search=${search}`);
-            if (status) params.push(`is_approved=${status}`);
+            if (status) params.push(`status=${status}`);
             if (params.length > 0) url += `?${params.join('&')}`;
 
             const res = await api.get(url);
@@ -40,17 +40,26 @@ const ReviewsPage = () => {
     const handleApprove = async (id) => {
         try {
             await api.post(`products/reviews/${id}/approve/`);
-            fetchReviews(); // Refresh list
+            fetchReviews(searchTerm, statusFilter); // Refresh list
         } catch (err) {
             alert('Approval failed. Check permissions.');
         }
     };
 
+    const handleReject = async (id) => {
+        try {
+            await api.post(`products/reviews/${id}/reject/`);
+            fetchReviews(searchTerm, statusFilter); // Refresh list
+        } catch (err) {
+            alert('Rejection failed. Check permissions.');
+        }
+    };
+
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete/reject this review?')) {
+        if (window.confirm('Are you sure you want to delete this review permanently?')) {
             try {
                 await api.delete(`products/reviews/${id}/`);
-                fetchReviews();
+                fetchReviews(searchTerm, statusFilter);
             } catch (err) {
                 alert('Deletion failed.');
             }
@@ -83,8 +92,9 @@ const ReviewsPage = () => {
                   style={{ padding: '10px 15px', borderRadius: '12px', border: '1px solid #e5e7eb', background: '#f9fafb', fontSize: '0.9rem', outline: 'none', minWidth: '180px' }}
                 >
                     <option value="">All Statuses</option>
-                    <option value="true">Approved Only</option>
-                    <option value="false">Pending Only</option>
+                    <option value="PENDING">Pending Approval</option>
+                    <option value="APPROVED">Approved Only</option>
+                    <option value="REJECTED">Rejected Only</option>
                 </select>
 
                 {(searchTerm || statusFilter) && (
@@ -106,6 +116,7 @@ const ReviewsPage = () => {
                                 <th style={{ padding: '1.25rem' }}>Review</th>
                                 <th style={{ padding: '1.25rem' }}>Customer</th>
                                 <th style={{ padding: '1.25rem' }}>Product</th>
+                                <th style={{ padding: '1.25rem' }}>Status</th>
                                 <th style={{ padding: '1.25rem' }}>Date</th>
                                 <th style={{ padding: '1.25rem', textAlign: 'right' }}>Actions</th>
                             </tr>
@@ -113,14 +124,14 @@ const ReviewsPage = () => {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" style={{ padding: '5rem', textAlign: 'center' }}>
+                                    <td colSpan="7" style={{ padding: '5rem', textAlign: 'center' }}>
                                         <Loader2 className="animate-spin" size={32} color="var(--purple-main)" />
                                     </td>
                                 </tr>
                             ) : reviews.length === 0 ? (
                                 <tr>
-                                    <td colSpan="6" style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-dim)' }}>
-                                        No reviews pending moderation.
+                                    <td colSpan="7" style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-dim)' }}>
+                                        No reviews found.
                                     </td>
                                 </tr>
                             ) : reviews.map((review) => (
@@ -146,26 +157,49 @@ const ReviewsPage = () => {
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem' }}>
+                                        {review.status === 'APPROVED' && (
+                                            <div style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '12px', background: '#dcfce7', color: '#166534', fontSize: '0.75rem', fontWeight: 700, alignItems: 'center', gap: '4px' }}>
+                                                <CheckCircle size={12} /> Approved
+                                            </div>
+                                        )}
+                                        {review.status === 'PENDING' && (
+                                            <div style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '12px', background: '#fef3c7', color: '#d97706', fontSize: '0.75rem', fontWeight: 700, alignItems: 'center', gap: '4px' }}>
+                                                <Clock size={12} /> Pending
+                                            </div>
+                                        )}
+                                        {review.status === 'REJECTED' && (
+                                            <div style={{ display: 'inline-flex', padding: '4px 10px', borderRadius: '12px', background: '#fee2e2', color: '#991b1b', fontSize: '0.75rem', fontWeight: 700, alignItems: 'center', gap: '4px' }}>
+                                                <AlertCircle size={12} /> Rejected
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td style={{ padding: '1.25rem' }}>
                                         <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
                                             {new Date(review.created_at).toLocaleDateString()}
                                         </div>
                                     </td>
                                     <td style={{ padding: '1.25rem', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                            {!review.is_approved ? (
+                                            {review.status !== 'APPROVED' && (
                                                 <button 
                                                   onClick={() => handleApprove(review.id)}
                                                   className="action-btn" title="Approve Review"
                                                   style={{ padding: '8px', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: 'none', cursor: 'pointer' }}>
                                                     <CheckCircle size={18} />
                                                 </button>
-                                            ) : (
-                                                <div style={{ padding: '4px 10px', borderRadius: '12px', background: '#dcfce7', color: '#166534', fontSize: '0.7rem', fontWeight: 700 }}>APPROVED</div>
+                                            )}
+                                            {review.status !== 'REJECTED' && (
+                                                <button 
+                                                  onClick={() => handleReject(review.id)}
+                                                  className="action-btn" title="Reject Review"
+                                                  style={{ padding: '8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>
+                                                    <X size={18} />
+                                                </button>
                                             )}
                                             <button 
                                               onClick={() => handleDelete(review.id)}
-                                              className="action-btn delete" title="Delete Review"
-                                              style={{ padding: '8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>
+                                              className="action-btn delete" title="Delete Review Permanently"
+                                              style={{ padding: '8px', borderRadius: '10px', background: 'rgba(100, 116, 139, 0.1)', color: '#64748b', border: 'none', cursor: 'pointer' }}>
                                                 <Trash2 size={18} />
                                             </button>
                                         </div>

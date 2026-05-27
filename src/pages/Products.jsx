@@ -695,7 +695,8 @@ const ProductsPage = () => {
         return names.length > 0 ? names.join(', ') : 'Generic';
     };
 
-    const filteredProducts = products; // Backend already filters now
+    // Only show standard (non-combo) products in the Standard Products tab
+    const filteredProducts = products.filter(p => p.product_type === 'single');
 
     return (
         <div style={{ position: 'relative' }}>
@@ -756,7 +757,7 @@ const ProductsPage = () => {
                         fontSize: '1rem'
                     }}
                 >
-                    Standard Products
+                    Standard Products ({filteredProducts.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('combos')}

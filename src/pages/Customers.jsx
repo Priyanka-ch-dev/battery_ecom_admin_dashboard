@@ -78,8 +78,15 @@ const CustomersPage = () => {
                 console.log(`Approving Review: API products/reviews/${reviewId}/approve/`);
                 await api.post(`products/reviews/${reviewId}/approve/`);
             } else if (action === 'reject') {
-                console.log(`Rejecting/Deleting Review: API products/reviews/${reviewId}/`);
-                await api.delete(`products/reviews/${reviewId}/`);
+                console.log(`Rejecting Review: API products/reviews/${reviewId}/reject/`);
+                await api.post(`products/reviews/${reviewId}/reject/`);
+            } else if (action === 'delete') {
+                if (window.confirm('Are you sure you want to delete this review permanently?')) {
+                    console.log(`Deleting Review: API products/reviews/${reviewId}/`);
+                    await api.delete(`products/reviews/${reviewId}/`);
+                } else {
+                    return;
+                }
             }
 
             // Re-fetch reviews for the specific customer to update UI
@@ -279,8 +286,13 @@ const CustomersPage = () => {
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem' }}>
                                                                 <strong style={{ color: 'var(--primary-glow)' }}>Product ID: {review.product}</strong>
                                                                 <span style={{ fontSize: '0.8rem', color: '#fbbf24' }}>★ {review.rating}/5</span>
-                                                                <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '8px', background: review.is_approved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: review.is_approved ? '#4ade80' : '#f87171' }}>
-                                                                    {review.is_approved ? 'Approved' : 'Pending'}
+                                                                <span style={{
+                                                                    fontSize: '0.7rem', padding: '2px 6px', borderRadius: '8px', 
+                                                                    background: review.status === 'APPROVED' ? 'rgba(34, 197, 94, 0.2)' : review.status === 'REJECTED' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(217, 119, 6, 0.2)', 
+                                                                    color: review.status === 'APPROVED' ? '#22c55e' : review.status === 'REJECTED' ? '#ef4444' : '#d97706',
+                                                                    fontWeight: 700
+                                                                }}>
+                                                                    {review.status === 'APPROVED' ? 'Approved' : review.status === 'REJECTED' ? 'Rejected' : 'Pending'}
                                                                 </span>
                                                             </div>
                                                             <p style={{ fontSize: '0.9rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>"{review.comment}"</p>
@@ -288,13 +300,18 @@ const CustomersPage = () => {
 
                                                         {/* ACTION BUTTONS */}
                                                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                            {!review.is_approved && (
+                                                            {review.status !== 'APPROVED' && (
                                                                 <button onClick={() => handleReviewAction(review.id, 'approve')} style={{ padding: '6px 12px', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', color: '#4ade80', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                                     <Check size={16} /> Approve
                                                                 </button>
                                                             )}
-                                                            <button onClick={() => handleReviewAction(review.id, 'reject')} style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                                <Trash2 size={16} /> Reject
+                                                            {review.status !== 'REJECTED' && (
+                                                                <button onClick={() => handleReviewAction(review.id, 'reject')} style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                    <X size={16} /> Reject
+                                                                </button>
+                                                            )}
+                                                            <button onClick={() => handleReviewAction(review.id, 'delete')} style={{ padding: '6px 12px', background: 'rgba(100, 116, 139, 0.1)', border: '1px solid rgba(100, 116, 139, 0.3)', color: '#64748b', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                <Trash2 size={16} /> Delete
                                                             </button>
                                                         </div>
                                                     </div>
