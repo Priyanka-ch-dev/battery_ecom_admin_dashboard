@@ -65,7 +65,7 @@ const OrderDetailModal = ({ orderId, onClose }) => {
                                 marginLeft: '8px', padding: '4px 12px', borderRadius: '20px',
                                 background: '#3b82f615', color: '#3b82f6', fontSize: '0.75rem', fontWeight: 700
                             }}>
-                                <RefreshCcw size={12} /> EXCHANGE ORDER
+                                <RefreshCcw size={12} /> EXCHANGE ORDER 
                             </div>
                         )}
                     </div>
