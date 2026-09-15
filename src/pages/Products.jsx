@@ -326,8 +326,7 @@ const ProductsPage = () => {
             setEditingProduct(null);
             setFormData({
                 name: '', slug: '', sku: '', description: '', price: '', gst_rate: '28.00', fuel_type: 'Any', stock: '',
-                is_active: true, category: [], brand: [], make: [], model: [], state: [], city: [], pincodes: [], is_active: true, warranty: '',
-                make: [], model: [], state: [], city: [],
+                is_active: true, category: [], brand: [], make: [], model: [], state: [], city: [], pincodes: [], warranty: '',
                 exchange_available: false, exchange_discount: 0
             });
             setSpecRows([{ key: '', value: '' }]);
