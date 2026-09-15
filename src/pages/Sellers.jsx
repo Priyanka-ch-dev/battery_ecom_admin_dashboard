@@ -528,6 +528,7 @@ const SellersPage = () => {
                                 <div style={{ display: 'grid', gap: '1rem', fontSize: '0.9rem' }}>
                                     <DataRow label="Acc Holder" value={selectedSeller.bank_account_name} />
                                     <DataRow label="Bank Name" value={selectedSeller.bank_name} />
+                                    <DataRow label="Branch Name" value={selectedSeller.bank_branch_name} />
                                     <DataRow label="Acc Number" value={selectedSeller.bank_account_number} />
                                     <DataRow label="IFSC Code" value={selectedSeller.bank_ifsc} />
                                     <DataRow label="Acc Type" value={selectedSeller.bank_account_type} />

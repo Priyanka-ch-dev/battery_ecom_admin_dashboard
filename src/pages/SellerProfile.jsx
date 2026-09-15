@@ -112,6 +112,7 @@ const SellerProfilePage = () => {
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                             <InfoItem label="Bank Name" value={seller.bank_name} />
+                            <InfoItem label="Branch Name" value={seller.bank_branch_name} />
                             <InfoItem label="Account Name" value={seller.bank_account_name} />
                             <InfoItem label="Account Number" value={seller.bank_account_number} />
                             <InfoItem label="IFSC Code" value={seller.bank_ifsc} />
