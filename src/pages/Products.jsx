@@ -22,7 +22,7 @@ const ProductsPage = () => {
     const [statusFilter, setStatusFilter] = useState('all');
 
     const [formData, setFormData] = useState({
-        name: '', slug: '', sku: '', description: '', price: '', stock: '',
+        name: '', slug: '', sku: '', description: '', price: '', gst_rate: '28.00', fuel_type: 'Any', stock: '',
         category: [], brand: [], is_active: true, warranty: '',
         make: [], model: [], state: [], city: [], pincodes: [],
         exchange_available: false, exchange_discount: 0
@@ -40,7 +40,7 @@ const ProductsPage = () => {
     // Combo State
     const [combos, setCombos] = useState([]);
     const [comboFormData, setComboFormData] = useState({
-        name: '', slug: '', sku: '', price: '', inverter: '', battery: '',
+        name: '', slug: '', sku: '', price: '', gst_rate: '28.00', fuel_type: 'Any', inverter: '', battery: '',
         is_active: true, warranty: '', make: [], model: [], state: [], city: [], pincodes: [],
         category: [], brand: [], description: '', special_price: '',
         exchange_available: false, exchange_discount: 0
@@ -300,6 +300,8 @@ const ProductsPage = () => {
                 sku: product.sku,
                 description: product.description,
                 price: product.price,
+                gst_rate: product.gst_rate,
+                fuel_type: product.fuel_type,
                 stock: product.stock,
                 category: product.category || [],
                 brand: product.brand || [],
@@ -323,8 +325,8 @@ const ProductsPage = () => {
         } else {
             setEditingProduct(null);
             setFormData({
-                name: '', slug: '', sku: '', description: '', price: '', stock: '',
-                category: [], brand: [], is_active: true, warranty: '',
+                name: '', slug: '', sku: '', description: '', price: '', gst_rate: '28.00', fuel_type: 'Any', stock: '',
+                is_active: true, category: [], brand: [], make: [], model: [], state: [], city: [], pincodes: [], is_active: true, warranty: '',
                 make: [], model: [], state: [], city: [],
                 exchange_available: false, exchange_discount: 0
             });
@@ -347,6 +349,8 @@ const ProductsPage = () => {
             productFd.append('sku', formData.sku);
             productFd.append('description', formData.description);
             productFd.append('price', formData.price);
+            productFd.append('gst_rate', formData.gst_rate);
+            productFd.append('fuel_type', formData.fuel_type);
             productFd.append('stock', formData.stock);
             productFd.append('is_active', formData.is_active);
             if (formData.warranty) productFd.append('warranty', formData.warranty);
@@ -464,6 +468,8 @@ const ProductsPage = () => {
                 slug: combo.slug,
                 sku: combo.sku,
                 price: combo.price,
+                gst_rate: combo.gst_rate,
+                fuel_type: combo.fuel_type,
                 inverter: combo.inverter,
                 battery: combo.battery,
                 is_active: combo.is_active,
@@ -499,9 +505,9 @@ const ProductsPage = () => {
         } else {
             setEditingCombo(null);
             setComboFormData({
-                name: '', slug: '', sku: '', price: '', inverter: '', battery: '',
-                is_active: true, warranty: '', make: [], model: [], state: [], city: [],
+                name: '', slug: '', sku: '', price: '', gst_rate: '28.00', fuel_type: 'Any', inverter: '', battery: '',
                 category: [], brand: [], description: '', special_price: '',
+                is_active: true, warranty: '', make: [], model: [], state: [], city: [], pincodes: [],
                 exchange_available: false, exchange_discount: 0
             });
             setComboImages([]);
@@ -520,6 +526,8 @@ const ProductsPage = () => {
             fd.append('slug', comboFormData.slug);
             fd.append('sku', comboFormData.sku);
             fd.append('price', comboFormData.price);
+            fd.append('gst_rate', comboFormData.gst_rate);
+            fd.append('fuel_type', comboFormData.fuel_type);
             fd.append('inverter', comboFormData.inverter);
             fd.append('battery', comboFormData.battery);
             fd.append('is_active', comboFormData.is_active);
@@ -890,7 +898,10 @@ const ProductsPage = () => {
                                                 {getCategoryName(p.category)}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '1.25rem', fontWeight: 800, color: 'var(--red-main)', fontSize: '1rem' }}>₹{p.price}</td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ fontWeight: 800, color: 'var(--red-main)', fontSize: '1rem' }}>₹{p.final_price || p.price}</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>+ {p.gst_rate}% GST</div>
+                                        </td>
                                         <td style={{ padding: '1.25rem' }}>
                                             <div style={{ color: p.stock < 10 ? '#ef4444' : 'var(--text-main, #1f2937)', fontWeight: 500 }}>{p.stock} units</div>
                                         </td>
@@ -993,7 +1004,10 @@ const ProductsPage = () => {
                                                 <strong>Battery:</strong> {c.battery_name}
                                             </div>
                                         </td>
-                                        <td style={{ padding: '1.25rem', fontWeight: 800, color: 'var(--red-main)', fontSize: '1.1rem' }}>₹{c.price}</td>
+                                        <td style={{ padding: '1.25rem' }}>
+                                            <div style={{ fontWeight: 800, color: 'var(--red-main)', fontSize: '1.1rem' }}>₹{c.final_price || c.price}</div>
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>+ {c.gst_rate}% GST</div>
+                                        </td>
                                         <td style={{ padding: '1.25rem' }}>
                                             <div style={{
                                                 padding: '4px 12px',
@@ -1061,8 +1075,22 @@ const ProductsPage = () => {
                                     <input required value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} />
                                 </div>
                                 <div className="input-group">
-                                    <label>Price (₹)</label>
+                                    <label>Base Price (₹)</label>
                                     <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>GST Rate (%)</label>
+                                    <input required type="number" step="0.01" value={formData.gst_rate} onChange={e => setFormData({ ...formData, gst_rate: e.target.value })} />
+                                </div>
+                                <div className="input-group">
+                                    <label>Fuel Type (Battery)</label>
+                                    <select value={formData.fuel_type} onChange={e => setFormData({ ...formData, fuel_type: e.target.value })}>
+                                        <option value="Any">Any</option>
+                                        <option value="Petrol">Petrol</option>
+                                        <option value="Diesel">Diesel</option>
+                                        <option value="CNG">CNG</option>
+                                        <option value="Electric">Electric</option>
+                                    </select>
                                 </div>
                                 <div className="input-group">
                                     <label>Stock</label>
@@ -1290,8 +1318,24 @@ const ProductsPage = () => {
                                         <input required value={comboFormData.sku} onChange={e => setComboFormData({ ...comboFormData, sku: e.target.value })} placeholder="COMBO-001" />
                                     </div>
                                     <div className="input-group">
-                                        <label>Combo Price (₹)</label>
+                                        <label>Base Price (₹)</label>
                                         <input required type="number" step="0.01" value={comboFormData.price} onChange={e => setComboFormData({ ...comboFormData, price: e.target.value })} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div className="input-group">
+                                        <label>GST Rate (%)</label>
+                                        <input required type="number" step="0.01" value={comboFormData.gst_rate} onChange={e => setComboFormData({ ...comboFormData, gst_rate: e.target.value })} />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>Fuel Type (Battery)</label>
+                                        <select value={comboFormData.fuel_type} onChange={e => setComboFormData({ ...comboFormData, fuel_type: e.target.value })}>
+                                            <option value="Any">Any</option>
+                                            <option value="Petrol">Petrol</option>
+                                            <option value="Diesel">Diesel</option>
+                                            <option value="CNG">CNG</option>
+                                            <option value="Electric">Electric</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div className="input-group">
