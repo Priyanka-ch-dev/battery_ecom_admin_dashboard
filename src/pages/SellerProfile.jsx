@@ -155,6 +155,8 @@ const SellerProfilePage = () => {
                             <DocPreview label="Aadhaar Copy" url={seller.aadhaar_card_copy} />
                             <DocPreview label="License Copy" url={seller.shop_license_copy} />
                             <DocPreview label="Bank Passbook" url={seller.bank_passbook_copy} />
+                            <DocPreview label="Auth Letter" url={seller.authorized_letter} />
+                            <DocPreview label="MSME Letter" url={seller.msme_letter_copy} />
                         </div>
                     </div>
                 </div>

@@ -544,6 +544,7 @@ const SellersPage = () => {
                                     <DocCard label="Aadhaar Card" url={selectedSeller.aadhaar_card_copy} />
                                     <DocCard label="Shop License" url={selectedSeller.shop_license_copy} />
                                     <DocCard label="Auth Letter" url={selectedSeller.authorized_letter} />
+                                    <DocCard label="MSME Letter" url={selectedSeller.msme_letter_copy} />
                                     <DocCard label="Bank Passbook" url={selectedSeller.bank_passbook_copy} />
                                     <DocCard label="Shop Image" url={selectedSeller.shop_image} isImage />
                                     <DocCard label="Owner Image" url={selectedSeller.owner_image} isImage />
