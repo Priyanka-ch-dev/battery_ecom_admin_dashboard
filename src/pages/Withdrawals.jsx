@@ -116,8 +116,9 @@ const WithdrawalsPage = () => {
                                     <div style={{ fontWeight: 800 }}>#WTH-{req.id}</div>
                                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{new Date(req.requested_at).toLocaleDateString()}</div>
                                 </td>
-                                <td style={{ padding: '1.25rem 1.5rem', fontWeight: 600, color: '#334155' }}>
-                                    Seller ID: {req.seller}
+                                <td style={{ padding: '1.25rem 1.5rem' }}>
+                                    <div style={{ fontWeight: 600, color: '#334155' }}>{req.seller_name || 'Unknown Seller'}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>ID: {req.seller}</div>
                                 </td>
                                 <td style={{ padding: '1.25rem 1.5rem', fontWeight: 800, color: '#000', fontSize: '1.1rem' }}>
                                     ₹{req.amount}
