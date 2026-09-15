@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Users, Mail, Phone, Calendar, Loader2, X, Check, Trash2, Package, Search } from 'lucide-react';
 import api from '../services/api';
 import OrderDetailModal from '../components/OrderDetailModal';
@@ -16,6 +17,15 @@ const CustomersPage = () => {
     const [customerAddresses, setCustomerAddresses] = useState([]);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const closeModal = () => {
+        setSelectedCustomer(null);
+        if (searchParams.has('userId')) {
+            searchParams.delete('userId');
+            setSearchParams(searchParams, { replace: true });
+        }
+    };
 
     useEffect(() => {
         const fetchCustomers = async () => {
@@ -98,6 +108,16 @@ const CustomersPage = () => {
             alert(`Failed to ${action} review.`);
         }
     };
+
+    useEffect(() => {
+        const userId = searchParams.get('userId');
+        if (userId && customers.length > 0 && !selectedCustomer) {
+            const customer = customers.find(c => c.id.toString() === userId);
+            if (customer) {
+                handleCustomerClick(customer);
+            }
+        }
+    }, [searchParams, customers]);
 
     return (
         <div style={{ position: 'relative' }}>
@@ -224,7 +244,7 @@ const CustomersPage = () => {
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 2rem', borderBottom: '1px solid var(--glass-border)', background: '#f8fafc' }}>
                             <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#000' }}>Customer Profile Explorer</h2>
-                            <button onClick={() => setSelectedCustomer(null)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
+                            <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'var(--text-main)', cursor: 'pointer' }}>
                                 <X size={24} />
                             </button>
                         </div>

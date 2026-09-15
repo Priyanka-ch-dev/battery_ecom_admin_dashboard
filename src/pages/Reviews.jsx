@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Star, CheckCircle, Trash2, Loader2, AlertCircle, Clock, Search, X } from 'lucide-react';
 import api from '../services/api';
 
@@ -65,6 +66,8 @@ const ReviewsPage = () => {
             }
         }
     };
+
+    const navigate = useNavigate();
 
     return (
         <div>
@@ -135,7 +138,16 @@ const ReviewsPage = () => {
                                     </td>
                                 </tr>
                             ) : reviews.map((review) => (
-                                <tr key={review.id} style={{ borderBottom: '1px solid #f3f4f6' }} className="table-row">
+                                <tr 
+                                    key={review.id} 
+                                    style={{ borderBottom: '1px solid #f3f4f6', cursor: review.user ? 'pointer' : 'default' }} 
+                                    className="table-row"
+                                    onClick={() => {
+                                        if (review.user) {
+                                            navigate(`/customers?userId=${review.user}`);
+                                        }
+                                    }}
+                                >
                                     <td style={{ padding: '1.25rem' }}>
                                         <div style={{ display: 'flex', gap: '2px' }}>
                                             {[...Array(5)].map((_, i) => (
@@ -182,7 +194,7 @@ const ReviewsPage = () => {
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                             {review.status !== 'APPROVED' && (
                                                 <button 
-                                                  onClick={() => handleApprove(review.id)}
+                                                  onClick={(e) => { e.stopPropagation(); handleApprove(review.id); }}
                                                   className="action-btn" title="Approve Review"
                                                   style={{ padding: '8px', borderRadius: '10px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: 'none', cursor: 'pointer' }}>
                                                     <CheckCircle size={18} />
@@ -190,14 +202,14 @@ const ReviewsPage = () => {
                                             )}
                                             {review.status !== 'REJECTED' && (
                                                 <button 
-                                                  onClick={() => handleReject(review.id)}
+                                                  onClick={(e) => { e.stopPropagation(); handleReject(review.id); }}
                                                   className="action-btn" title="Reject Review"
                                                   style={{ padding: '8px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', cursor: 'pointer' }}>
                                                     <X size={18} />
                                                 </button>
                                             )}
                                             <button 
-                                              onClick={() => handleDelete(review.id)}
+                                              onClick={(e) => { e.stopPropagation(); handleDelete(review.id); }}
                                               className="action-btn delete" title="Delete Review Permanently"
                                               style={{ padding: '8px', borderRadius: '10px', background: 'rgba(100, 116, 139, 0.1)', color: '#64748b', border: 'none', cursor: 'pointer' }}>
                                                 <Trash2 size={18} />
